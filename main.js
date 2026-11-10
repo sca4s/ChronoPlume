@@ -276,9 +276,9 @@
      PERSISTENCE & CONFIGURATION STATE
      ========================================================= */
   const STORAGE_KEYS = {
-    BEST_SCORE: 'chronoplume_best_score_v3',
-    BEST_TIME: 'chronoplume_best_time_v3',
-    SAVED_GAME: 'chronoplume_saved_session_v3'
+    BEST_SCORE: 'chronoplume_best_score_v4',
+    BEST_TIME: 'chronoplume_best_time_v4',
+    SAVED_GAME: 'chronoplume_saved_session_v4'
   };
 
   const state = {
@@ -286,11 +286,11 @@
     theme: 'light',
     bgBiome: 'meadow',
     skyMode: 'dynamic', // 'dynamic' | 'fixed-day' | 'fixed-night'
-    initialScene: 'day', // 'day' | 'night' (used when skyMode === 'dynamic')
+    initialScene: 'day', // 'day' | 'night'
     cameraMode: 'classic', // 'classic' | 'pov'
     birdShape: 'sphere',
-    bodyColor: '#ff8da1',
-    wingColor: '#ffffff',
+    bodyColor: '#f48fb1',
+    wingColor: '#fff8fc',
 
     // Runtime
     phase: 'menu', // 'menu' | 'countdown' | 'playing' | 'paused' | 'gameover'
@@ -312,9 +312,11 @@
     cycleRateMultiplier: 1.0,
     baseCycleSpeed: 0.048,
 
-    // Timers
+    // Randomized Obstacle Course State
     obstacleSpawnDelay: 2.0,
-    timeSinceNextPipe: 0
+    timeSinceNextPipe: 0,
+    nextPipeInterval: 1.6,
+    lastGapY: 0
   };
 
   /* =========================================================
@@ -409,7 +411,7 @@
   autoDetectDeviceProfile();
 
   /* =========================================================
-     UPPER-LEFT BLURRED PLAGUE THEME TRANSITION (HOMESCREEN & IN-GAME)
+     UPPER-LEFT BLURRED PLAGUE THEME TRANSITION
      ========================================================= */
   bindTouchAndClick(dom.btnAudio, () => {
     const isOn = SoundFX.toggleMute();
@@ -427,9 +429,8 @@
 
     SoundFX.themeTransition(state.theme === 'dark');
 
-    // Update 3D Preview Stage Background
     if (previewRenderer) {
-      previewRenderer.setClearColor(state.theme === 'light' ? 0xe6f2ff : 0x25213b, 1);
+      previewRenderer.setClearColor(state.theme === 'light' ? 0xe3f1ff : 0x25213b, 1);
     }
 
     const sections = document.querySelectorAll('.ui-section');
@@ -495,22 +496,31 @@
   });
 
   /* =========================================================
-     SHARED 3D BIRD BUILDER (USED BY MAIN WORLD & PREVIEW STAGE)
+     MATTE PASTEL 3D BIRD BUILDER (ZERO HARSH REFLECTIVITY)
      ========================================================= */
   function populateBirdMeshGroup(targetGroup) {
     while (targetGroup.children.length > 0) {
       targetGroup.remove(targetGroup.children[0]);
     }
 
+    const bodyColorObj = new THREE.Color(state.bodyColor);
+    const wingColorObj = new THREE.Color(state.wingColor);
+
+    // Matte clay-satin finish (high roughness, zero metalness, subtle self-tint)
     const bodyMat = new THREE.MeshStandardMaterial({
-      color: state.bodyColor,
-      roughness: 0.28,
-      metalness: 0.08
+      color: bodyColorObj,
+      emissive: bodyColorObj,
+      emissiveIntensity: 0.14,
+      roughness: 0.92,
+      metalness: 0.0
     });
+
     const wingMat = new THREE.MeshStandardMaterial({
-      color: state.wingColor,
-      roughness: 0.25,
-      metalness: 0.05
+      color: wingColorObj,
+      emissive: wingColorObj,
+      emissiveIntensity: 0.12,
+      roughness: 0.9,
+      metalness: 0.0
     });
 
     let bodyGeo;
@@ -528,22 +538,28 @@
     }
     targetGroup.add(bodyMesh);
 
-    // Sculpted Pastel Tail Crest
+    // Sculpted Matte Tail Crest
     const tail = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.5, 10), wingMat);
     tail.rotation.z = Math.PI / 2.3;
     tail.position.set(-0.62, 0.12, 0);
     targetGroup.add(tail);
 
-    // Beak
+    // Matte Pastel Beak
     const beak = new THREE.Mesh(
       new THREE.ConeGeometry(0.19, 0.48, 14),
-      new THREE.MeshStandardMaterial({ color: 0xffb84d, roughness: 0.3 })
+      new THREE.MeshStandardMaterial({
+        color: 0xffb84d,
+        emissive: 0xffb84d,
+        emissiveIntensity: 0.1,
+        roughness: 0.9,
+        metalness: 0.0
+      })
     );
     beak.rotation.z = -Math.PI / 2;
     beak.position.set(0.68, 0.04, 0);
     targetGroup.add(beak);
 
-    // High-Contrast Eyes + Specular Glint
+    // Crisp Dark-Ink Eyes
     const eyeGeo = new THREE.SphereGeometry(0.1, 14, 14);
     const eyeMat = new THREE.MeshBasicMaterial({ color: 0x181326 });
     const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
@@ -552,8 +568,8 @@
     eyeR.position.z = -0.42;
     targetGroup.add(eyeL, eyeR);
 
-    // Articulated 3D Wings
-    const wingGeo = new THREE.BoxGeometry(0.52, 0.1, 0.7);
+    // Articulated Matte 3D Wings
+    const wingGeo = new THREE.BoxGeometry(0.52, 0.11, 0.7);
     const leftPivot = new THREE.Group();
     leftPivot.position.set(0, 0.05, 0.46);
     const leftWing = new THREE.Mesh(wingGeo, wingMat);
@@ -571,24 +587,24 @@
   }
 
   /* =========================================================
-     DEDICATED 3D BIRD PREVIEW SCENE (ALWAYS CLEARLY VISIBLE)
+     DEDICATED 3D BIRD PREVIEW SCENE (MATTE STUDIO LIGHTING)
      ========================================================= */
   const previewScene = new THREE.Scene();
-  const previewCamera = new THREE.PerspectiveCamera(42, 1.6, 0.1, 30);
-  previewCamera.position.set(1.6, 0.75, 2.75);
-  previewCamera.lookAt(0, 0.05, 0);
+  const previewCamera = new THREE.PerspectiveCamera(40, 1.6, 0.1, 30);
+  previewCamera.position.set(1.65, 0.72, 2.75);
+  previewCamera.lookAt(0, 0.04, 0);
 
   const previewRenderer = new THREE.WebGLRenderer({
     canvas: dom.previewCanvas,
     antialias: true
   });
-  previewRenderer.setClearColor(0xe6f2ff, 1);
+  previewRenderer.setClearColor(0xe3f1ff, 1);
   previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-  const prevAmbient = new THREE.AmbientLight(0xffffff, 0.9);
-  previewScene.add(prevAmbient);
-  const prevKeyLight = new THREE.DirectionalLight(0xfff5eb, 1.25);
-  prevKeyLight.position.set(4, 6, 5);
+  const prevHemiLight = new THREE.HemisphereLight(0xffffff, 0xd8cff8, 0.75);
+  previewScene.add(prevHemiLight);
+  const prevKeyLight = new THREE.DirectionalLight(0xfff5eb, 0.55);
+  prevKeyLight.position.set(3, 5, 4);
   previewScene.add(prevKeyLight);
 
   const previewBirdGroup = new THREE.Group();
@@ -624,11 +640,11 @@
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.82);
-  scene.add(ambientLight);
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0xc7d2fe, 0.68);
+  scene.add(hemiLight);
 
-  const dirLight = new THREE.DirectionalLight(0xfff6e5, 1.2);
-  dirLight.position.set(14, 26, 16);
+  const dirLight = new THREE.DirectionalLight(0xfff6e5, 0.68);
+  dirLight.position.set(12, 24, 14);
   scene.add(dirLight);
 
   // Sun, Moon & Starfield
@@ -666,7 +682,7 @@
   const clouds = [];
   const cloudMat = new THREE.MeshStandardMaterial({
     color: 0xffffff,
-    roughness: 0.9,
+    roughness: 0.95,
     metalness: 0.0,
     flatShading: true
   });
@@ -704,8 +720,8 @@
   const decorGroup = new THREE.Group();
   scene.add(decorGroup);
   const islandMeshes = [];
-  const islandMat = new THREE.MeshStandardMaterial({ color: 0x99f6e4, flatShading: true });
-  const capMat = new THREE.MeshStandardMaterial({ color: 0xa7f3d0, flatShading: true });
+  const islandMat = new THREE.MeshStandardMaterial({ color: 0x99f6e4, roughness: 0.9, flatShading: true });
+  const capMat = new THREE.MeshStandardMaterial({ color: 0xa7f3d0, roughness: 0.9, flatShading: true });
 
   for (let i = 0; i < 10; i++) {
     const islHolder = new THREE.Group();
@@ -819,17 +835,11 @@
   }
 
   /* =========================================================
-     3D SCULPTED OBSTACLES & PORTAL RINGS
+     RANDOMIZED 3D OBSTACLE GENERATOR (NEW PATTERNS EVERY GAME)
      ========================================================= */
   const obstacleGroup = new THREE.Group();
   scene.add(obstacleGroup);
   let obstacles = [];
-
-  const pillarMat = new THREE.MeshStandardMaterial({
-    color: 0xa5b4fc,
-    roughness: 0.28,
-    metalness: 0.14
-  });
 
   const ringMat = new THREE.MeshBasicMaterial({
     color: 0xffffff,
@@ -837,50 +847,111 @@
     opacity: 0.55
   });
 
+  const BIOME_PILLAR_SWATCHES = {
+    meadow: [0xa5b4fc, 0x93c5fd, 0x6ee7b7, 0xc4b5fd],
+    crystal: [0xf0abfc, 0x7dd3fc, 0xa5b4fc, 0xf9a8d4],
+    sunset: [0xfde047, 0xfda4af, 0xfdba74, 0xd8b4fe]
+  };
+
   function clearObstacles() {
     obstacles.forEach((ob) => obstacleGroup.remove(ob.group));
     obstacles = [];
   }
 
+  function pickRandomGapY() {
+    let candidate = (Math.random() - 0.5) * 5.6;
+    // Ensure noticeable vertical variation between consecutive obstacles
+    if (Math.abs(candidate - state.lastGapY) < 1.1) {
+      candidate += candidate > 0 ? -1.6 : 1.6;
+    }
+    candidate = Math.max(-2.85, Math.min(2.85, candidate));
+    state.lastGapY = candidate;
+    return candidate;
+  }
+
   function spawnObstacle(customData = null) {
-    const gapSize = 3.65;
-    const gapY = customData ? customData.gapY : (Math.random() - 0.5) * 4.8;
-    const posX = customData ? customData.x : 18;
+    const gapSize = customData?.gapSize ?? 3.45 + Math.random() * 0.65;
+    const gapY = customData?.gapY ?? pickRandomGapY();
+    const posX = customData?.x ?? 18 + Math.random() * 1.5;
+
+    const styles = ['cylinder', 'hexCrystal', 'ringTotem'];
+    const style = customData?.style ?? styles[Math.floor(Math.random() * styles.length)];
+
+    const biomeSwatches = BIOME_PILLAR_SWATCHES[state.bgBiome] || BIOME_PILLAR_SWATCHES.meadow;
+    const colorHex =
+      customData?.colorHex ?? biomeSwatches[Math.floor(Math.random() * biomeSwatches.length)];
+
+    const bobAmp = customData?.bobAmp ?? (Math.random() < 0.35 ? 0.35 + Math.random() * 0.45 : 0);
+    const bobSpeed = customData?.bobSpeed ?? 1.4 + Math.random() * 1.2;
+    const bobPhase = customData?.bobPhase ?? Math.random() * Math.PI * 2;
+
+    const mat = new THREE.MeshStandardMaterial({
+      color: colorHex,
+      roughness: 0.86,
+      metalness: 0.0,
+      flatShading: style === 'hexCrystal'
+    });
 
     const pairGroup = new THREE.Group();
     pairGroup.position.x = posX;
 
     const pipeHeight = 14;
-    const geo = new THREE.CylinderGeometry(0.76, 0.76, pipeHeight, 24);
-    const rimGeo = new THREE.CylinderGeometry(0.92, 0.92, 0.45, 24);
+    let radialSegments = 24;
+    let radius = 0.76;
+    if (style === 'hexCrystal') {
+      radialSegments = 6;
+      radius = 0.84;
+    }
 
-    const topMesh = new THREE.Mesh(geo, pillarMat);
+    const geo = new THREE.CylinderGeometry(radius, radius, pipeHeight, radialSegments);
+    const rimGeo = new THREE.CylinderGeometry(radius * 1.2, radius * 1.2, 0.46, radialSegments);
+
+    const topMesh = new THREE.Mesh(geo, mat);
     topMesh.position.y = gapY + gapSize / 2 + pipeHeight / 2;
-    const topRim = new THREE.Mesh(rimGeo, pillarMat);
-    topRim.position.y = gapY + gapSize / 2 + 0.22;
+    const topRim = new THREE.Mesh(rimGeo, mat);
+    topRim.position.y = gapY + gapSize / 2 + 0.23;
 
-    const bottomMesh = new THREE.Mesh(geo, pillarMat);
+    const bottomMesh = new THREE.Mesh(geo, mat);
     bottomMesh.position.y = gapY - gapSize / 2 - pipeHeight / 2;
-    const bottomRim = new THREE.Mesh(rimGeo, pillarMat);
-    bottomRim.position.y = gapY - gapSize / 2 - 0.22;
+    const bottomRim = new THREE.Mesh(rimGeo, mat);
+    bottomRim.position.y = gapY - gapSize / 2 - 0.23;
 
-    const portalRing = new THREE.Mesh(new THREE.TorusGeometry(gapSize * 0.45, 0.06, 12, 32), ringMat);
+    pairGroup.add(topMesh, topRim, bottomMesh, bottomRim);
+
+    if (style === 'ringTotem') {
+      const collarGeo = new THREE.TorusGeometry(radius * 1.15, 0.12, 10, 24);
+      const topCollar = new THREE.Mesh(collarGeo, mat);
+      topCollar.rotation.x = Math.PI / 2;
+      topCollar.position.y = gapY + gapSize / 2 + 1.4;
+
+      const botCollar = topCollar.clone();
+      botCollar.position.y = gapY - gapSize / 2 - 1.4;
+      pairGroup.add(topCollar, botCollar);
+    }
+
+    const portalRing = new THREE.Mesh(new THREE.TorusGeometry(gapSize * 0.44, 0.06, 12, 32), ringMat);
     portalRing.rotation.y = Math.PI / 2;
     portalRing.position.y = gapY;
+    pairGroup.add(portalRing);
 
-    pairGroup.add(topMesh, topRim, bottomMesh, bottomRim, portalRing);
     obstacleGroup.add(pairGroup);
 
     obstacles.push({
       group: pairGroup,
+      baseGapY: gapY,
       gapY,
       gapSize,
+      style,
+      colorHex,
+      bobAmp,
+      bobSpeed,
+      bobPhase,
       passed: customData ? Boolean(customData.passed) : false
     });
   }
 
   /* =========================================================
-     PASTEL BIOMES & 3 CELESTIAL MODES (DYNAMIC / FIXED DAY / FIXED NIGHT)
+     PASTEL BIOMES & 3 CELESTIAL MODES
      ========================================================= */
   const BIOME_PALETTES = {
     meadow: {
@@ -888,7 +959,6 @@
       nightSky: new THREE.Color(0x161930),
       island: 0x86efac,
       cap: 0xbbf7d0,
-      pillar: 0xa5b4fc,
       cloudDay: 0xffffff,
       cloudNight: 0x8b95c9
     },
@@ -897,7 +967,6 @@
       nightSky: new THREE.Color(0x111a2e),
       island: 0x67e8f9,
       cap: 0xa5f3fc,
-      pillar: 0xf0abfc,
       cloudDay: 0xf8fafc,
       cloudNight: 0x7c93b8
     },
@@ -906,7 +975,6 @@
       nightSky: new THREE.Color(0x25173d),
       island: 0xfda4af,
       cap: 0xfecdd3,
-      pillar: 0xfde047,
       cloudDay: 0xfff1f2,
       cloudNight: 0x9f7ab8
     }
@@ -926,7 +994,6 @@
     const palette = BIOME_PALETTES[state.bgBiome] || BIOME_PALETTES.meadow;
     islandMat.color.setHex(palette.island);
     capMat.color.setHex(palette.cap);
-    pillarMat.color.setHex(palette.pillar);
 
     if (state.skyMode === 'fixed-day') {
       state.celestialTime = 0.0;
@@ -948,8 +1015,8 @@
     const cloudNightCol = new THREE.Color(palette.cloudNight);
     cloudMat.color.copy(cloudDayCol.lerp(cloudNightCol, nightFactor));
 
-    ambientLight.intensity = 0.85 - nightFactor * 0.45;
-    dirLight.intensity = 1.2 - nightFactor * 0.72;
+    hemiLight.intensity = 0.72 - nightFactor * 0.28;
+    dirLight.intensity = 0.68 - nightFactor * 0.35;
     starMat.opacity = Math.max(0, (nightFactor - 0.32) * 1.45);
 
     const angle = state.celestialTime * Math.PI * 2 + Math.PI / 2;
@@ -967,7 +1034,7 @@
   }
 
   /* =========================================================
-     3-SECOND COUNTDOWN & GAME FLOW (HOME STUDIO + PAUSE STUDIO)
+     3-SECOND COUNTDOWN & GAME FLOW
      ========================================================= */
   let countdownInterval = null;
 
@@ -995,7 +1062,6 @@
   }
 
   function openStudioModal(mode) {
-    // mode: 'home' | 'pause'
     const isPause = mode === 'pause';
     dom.customizeBadge.textContent = isPause ? 'Flight Paused' : 'Step 2 of 2';
     dom.customizeTitle.textContent = isPause ? 'Pause & Live World Studio' : 'World & Bird Studio';
@@ -1016,8 +1082,12 @@
     state.forwardSpeedMultiplier = 1.0;
     state.cycleRateMultiplier = 1.0;
     syncCelestialClockToMode();
+
+    // Fresh randomization parameters for each game
     state.obstacleSpawnDelay = 2.0;
     state.timeSinceNextPipe = 0;
+    state.nextPipeInterval = 1.35 + Math.random() * 0.55;
+    state.lastGapY = (Math.random() - 0.5) * 2.5;
 
     birdGroup.position.y = state.birdY;
     birdGroup.rotation.z = 0;
@@ -1049,6 +1119,7 @@
       if (saved.cameraMode) setCameraMode(saved.cameraMode, false);
       state.obstacleSpawnDelay = 2.0;
       state.timeSinceNextPipe = 0;
+      state.nextPipeInterval = 1.4 + Math.random() * 0.5;
 
       if (Array.isArray(saved.obstacles)) {
         saved.obstacles.forEach((ob) => spawnObstacle(ob));
@@ -1071,7 +1142,13 @@
   function saveProgressAndLeaveHome() {
     const serializedObstacles = obstacles.map((ob) => ({
       x: ob.group.position.x,
-      gapY: ob.gapY,
+      gapY: ob.baseGapY,
+      gapSize: ob.gapSize,
+      style: ob.style,
+      colorHex: ob.colorHex,
+      bobAmp: ob.bobAmp,
+      bobSpeed: ob.bobSpeed,
+      bobPhase: ob.bobPhase,
       passed: ob.passed
     }));
 
@@ -1360,7 +1437,7 @@
       previewWings.rightPivot.rotation.x = -Math.sin(now * 0.012) * 0.5;
     }
 
-    // Rotate & Bob the 3D Preview Bird so it is always visible from every angle
+    // Rotate & Bob the 3D Preview Bird
     previewBirdGroup.rotation.y = now * 0.0012;
     previewBirdGroup.position.y = Math.sin(now * 0.0035) * 0.12;
     previewRenderer.render(previewScene, previewCamera);
@@ -1395,23 +1472,31 @@
         if (isl.position.x < -28) isl.position.x = 54;
       });
 
-      // 2-Second Initial Delay Before Obstacles Spawn
+      // 2-Second Initial Delay Before Randomized Obstacles Spawn
       if (state.obstacleSpawnDelay > 0) {
         state.obstacleSpawnDelay -= dt;
       } else {
         state.timeSinceNextPipe += dt * state.forwardSpeedMultiplier;
-        if (state.timeSinceNextPipe >= 1.65) {
+        if (state.timeSinceNextPipe >= state.nextPipeInterval) {
           state.timeSinceNextPipe = 0;
+          state.nextPipeInterval = 1.35 + Math.random() * 0.6;
           spawnObstacle();
         }
       }
 
       const birdX = birdGroup.position.x;
-      const birdRadius = 0.46;
+      const birdRadius = 0.45;
 
       for (let i = obstacles.length - 1; i >= 0; i--) {
         const ob = obstacles[i];
         ob.group.position.x -= forwardVel * dt;
+
+        // Optional gentle vertical oscillation on randomized moving pillars
+        if (ob.bobAmp > 0) {
+          const offset = Math.sin(state.elapsedTime * ob.bobSpeed + ob.bobPhase) * ob.bobAmp;
+          ob.group.position.y = offset;
+          ob.gapY = ob.baseGapY + offset;
+        }
 
         if (!ob.passed && ob.group.position.x < birdX) {
           ob.passed = true;

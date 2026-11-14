@@ -1,43 +1,50 @@
 /* =========================================================
-   PROPORTIONAL SCREEN-SIZE SCALING (LARGER SCREEN = LARGER UI)
+   PROPORTIONAL VIEWPORT SCALING ENGINE
+   Larger screen = Larger UI | Smaller screen = Smaller UI
+   Touch Handheld gets an automatic ergonomic size boost
    ========================================================= */
 html {
-  font-size: clamp(10px, min(1.35vw, 2.15vh), 26px);
+  font-size: clamp(9.5px, min(1.22vw, 1.92vh), 24px);
+}
+
+body[data-device="handheld"] {
+  font-size: 1.08rem;
 }
 
 :root {
-  --ui-gap: 0.95rem;
-  --pad-card: 1.05rem;
-  --pad-inner: 0.75rem;
-  --card-radius: 1.45rem;
-  --inner-radius: 0.95rem;
+  --ui-gap: 0.85rem;
+  --pad-card: 0.95rem;
+  --pad-inner: 0.68rem;
+  --card-radius: 1.4rem;
+  --inner-radius: 0.92rem;
 
-  /* Glassmorphic Coloured Frosted Palettes */
-  --surface-bg: rgba(250, 246, 255, 0.84);
-  --surface-border: rgba(184, 169, 255, 0.35);
-  --pill-bg: rgba(234, 225, 255, 0.92);
-  --preview-bg: rgba(220, 238, 255, 0.85);
-  --text-main: #1d1730;
-  --text-muted: #534875;
-  --accent-pastel: #ff94b2;
-  --accent-secondary: #b8a9ff;
-  --accent-mint: #7ce0b3;
-  --accent-text: #1d1730;
-  --shadow-clean: 0 0.9rem 2.2rem rgba(29, 23, 48, 0.14);
+  /* Colored Glassmorphic Light Palette (Zero Gradients) */
+  --surface-bg: rgba(248, 242, 255, 0.72);
+  --surface-border: rgba(168, 144, 254, 0.42);
+  --pill-bg: rgba(228, 216, 255, 0.65);
+  --pill-active-bg: rgba(255, 148, 178, 0.78);
+  --secondary-glass-bg: rgba(180, 160, 255, 0.75);
+  --mint-glass-bg: rgba(110, 231, 183, 0.78);
+  --preview-bg: rgba(216, 238, 255, 0.72);
+  --text-main: #1b142e;
+  --text-muted: #4f436f;
+  --accent-text: #1b142e;
+  --shadow-clean: 0 0.85rem 2.1rem rgba(27, 20, 46, 0.14);
 }
 
 [data-theme="dark"] {
-  --surface-bg: rgba(24, 21, 38, 0.88);
-  --surface-border: rgba(184, 169, 255, 0.22);
-  --pill-bg: rgba(46, 40, 74, 0.94);
-  --preview-bg: rgba(32, 28, 54, 0.85);
-  --text-main: #f8f5ff;
-  --text-muted: #c7bce6;
-  --accent-pastel: #ffb3c8;
-  --accent-secondary: #c4b8ff;
-  --accent-mint: #8ef0c4;
-  --accent-text: #161224;
-  --shadow-clean: 0 1rem 2.5rem rgba(6, 5, 14, 0.58);
+  /* Colored Glassmorphic Dark Palette (Zero Gradients) */
+  --surface-bg: rgba(25, 21, 42, 0.74);
+  --surface-border: rgba(192, 179, 255, 0.28);
+  --pill-bg: rgba(48, 41, 78, 0.68);
+  --pill-active-bg: rgba(255, 166, 194, 0.82);
+  --secondary-glass-bg: rgba(186, 170, 255, 0.78);
+  --mint-glass-bg: rgba(126, 242, 196, 0.82);
+  --preview-bg: rgba(34, 29, 58, 0.76);
+  --text-main: #f7f4ff;
+  --text-muted: #c6bce3;
+  --accent-text: #161124;
+  --shadow-clean: 0 1rem 2.4rem rgba(5, 4, 12, 0.56);
 }
 
 * {
@@ -74,13 +81,15 @@ button, select {
   font-family: inherit;
 }
 
-/* Glassmorphic Coloured UI Containers */
+/* =========================================================
+   COLORED GLASSMORPHIC CONTAINERS & PLAGUE TRANSITION
+   ========================================================= */
 .ui-section {
   position: relative;
   overflow: hidden;
   background-color: var(--surface-bg);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  backdrop-filter: blur(26px) saturate(190%);
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
   border: 1.8px solid var(--surface-border);
   box-shadow: var(--shadow-clean);
   color: var(--text-main);
@@ -98,17 +107,19 @@ button, select {
   z-index: 20;
   pointer-events: none;
   border-radius: inherit;
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  backdrop-filter: blur(26px) saturate(190%);
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
 }
 
-/* Top Navigation Bar */
+/* =========================================================
+   TOP NAVIGATION BAR
+   ========================================================= */
 .top-bar {
   position: fixed;
   top: var(--ui-gap);
   left: var(--ui-gap);
   right: var(--ui-gap);
-  height: 3.2rem;
+  height: 3rem;
   z-index: 65;
   display: flex;
   justify-content: space-between;
@@ -122,36 +133,37 @@ button, select {
 .diamond-vault-badge {
   pointer-events: auto;
   border-radius: 999px;
-  height: 3.2rem;
+  height: 3rem;
   display: inline-flex;
   align-items: center;
 }
 
-.brand-inner,
+.brand-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0 1.15rem 0 0.6rem;
+}
+
 .vault-inner {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0 1.2rem 0 0.65rem;
+  gap: 0.45rem;
+  padding: 0 1.1rem;
+  font-weight: 800;
+  font-size: 0.92rem;
 }
 
 .brand-icon {
-  width: 2.05rem;
-  height: 2.05rem;
+  width: 1.95rem;
+  height: 1.95rem;
   flex-shrink: 0;
 }
 
 .brand-title {
   font-weight: 800;
-  font-size: 1.08rem;
+  font-size: 1.02rem;
   letter-spacing: -0.02em;
-}
-
-.vault-inner {
-  font-weight: 800;
-  font-size: 0.95rem;
-  color: var(--accent-mint);
-  padding: 0 1.1rem;
 }
 
 .top-controls {
@@ -162,14 +174,14 @@ button, select {
 
 .action-pill {
   cursor: pointer;
-  padding: 0 1.3rem;
+  padding: 0 1.2rem;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.86rem;
   transition: transform 0.16s ease, background-color 0.2s ease;
 }
 
 .accent-pill {
-  background-color: var(--accent-secondary);
+  background-color: var(--secondary-glass-bg);
   color: var(--accent-text);
 }
 
@@ -181,16 +193,22 @@ button, select {
   display: none !important;
 }
 
-/* Equidistant HUD Stack (Handheld & Desktop Proportional Scaling) */
+/* =========================================================
+   EQUIDISTANT LEFT STACKING HUD
+   ========================================================= */
 .hud-stack {
   position: fixed;
-  top: calc(var(--ui-gap) * 2 + 3.2rem);
+  top: calc(var(--ui-gap) * 2 + 3rem);
   left: var(--ui-gap);
   z-index: 25;
-  width: 17.5rem;
+  width: 16.4rem;
   display: flex;
   flex-direction: column;
   pointer-events: none;
+}
+
+body[data-device="handheld"] .hud-stack {
+  width: 17.6rem;
 }
 
 .hidden-hud {
@@ -199,7 +217,7 @@ button, select {
 }
 
 .hud-slot {
-  max-height: 14.5rem;
+  max-height: 14rem;
   margin-bottom: var(--ui-gap);
   transition:
     max-height 0.46s cubic-bezier(0.22, 1, 0.36, 1),
@@ -224,7 +242,7 @@ button, select {
 .hud-card-inner {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.55rem;
 }
 
 .hud-header {
@@ -234,7 +252,7 @@ button, select {
 }
 
 .hud-tag {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 800;
@@ -242,14 +260,15 @@ button, select {
 }
 
 .hud-hide-btn {
-  width: 1.7rem;
-  height: 1.7rem;
+  width: 1.6rem;
+  height: 1.6rem;
   border-radius: 50%;
-  border: 1.8px solid var(--surface-border);
+  border: 1.5px solid var(--surface-border);
   background-color: var(--pill-bg);
+  backdrop-filter: blur(12px);
   color: var(--text-main);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   line-height: 1;
   display: grid;
@@ -259,12 +278,13 @@ button, select {
 .hud-metrics {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.65rem;
+  gap: 0.6rem;
 }
 
 .metric-box {
   background-color: var(--pill-bg);
-  padding: 0.55rem 0.75rem;
+  backdrop-filter: blur(14px);
+  padding: 0.52rem 0.7rem;
   border-radius: var(--inner-radius);
   border: 1.5px solid var(--surface-border);
   display: flex;
@@ -273,20 +293,20 @@ button, select {
 }
 
 .metric-label {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--text-muted);
 }
 
 .metric-val {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 800;
 }
 
 .dynamics-grid {
   display: flex;
   flex-direction: column;
-  gap: 0.48rem;
+  gap: 0.38rem;
 }
 
 .dyn-row {
@@ -294,7 +314,7 @@ button, select {
   justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   color: var(--text-muted);
   font-weight: 600;
   white-space: nowrap;
@@ -305,7 +325,9 @@ button, select {
   font-weight: 800;
 }
 
-/* Enlarged Proportional On-Screen Touch Controls */
+/* =========================================================
+   PROPORTIONAL ON-SCREEN DEVICE CONTROLS
+   ========================================================= */
 .device-controls {
   position: fixed;
   bottom: var(--ui-gap);
@@ -322,46 +344,57 @@ button, select {
 
 .control-cluster {
   pointer-events: auto;
-  padding: 0.75rem;
+  padding: 0.7rem;
 }
 
 .cluster-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.65rem;
-  width: calc(17.5rem - 1.5rem);
+  gap: 0.6rem;
+  width: calc(16.4rem - 1.4rem);
+}
+
+body[data-device="handheld"] .cluster-grid {
+  width: calc(17.6rem - 1.4rem);
+  gap: 0.7rem;
 }
 
 .right-deck-layout {
   display: flex;
   align-items: stretch;
-  gap: 0.75rem;
+  gap: 0.7rem;
 }
 
 .ctrl-btn {
   border: 1.8px solid var(--surface-border);
   background-color: var(--pill-bg);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
   color: var(--text-main);
   border-radius: var(--inner-radius);
-  padding: 0.7rem 0.85rem;
+  padding: 0.62rem 0.85rem;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
+  gap: 0.22rem;
   touch-action: none;
   transition: transform 0.1s ease, background-color 0.2s ease;
 }
 
+body[data-device="handheld"] .ctrl-btn {
+  padding: 0.82rem 1rem;
+}
+
 .ctrl-btn strong {
-  font-size: 0.98rem;
+  font-size: 0.96rem;
   font-weight: 800;
   line-height: 1.1;
 }
 
 .ctrl-btn span {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--text-muted);
   line-height: 1.1;
@@ -373,10 +406,10 @@ button, select {
 }
 
 .cam-btn {
-  background-color: var(--accent-secondary);
+  background-color: var(--secondary-glass-bg);
   color: var(--accent-text);
-  min-width: 6.2rem;
-  min-height: 5.4rem;
+  min-width: 5.8rem;
+  min-height: 5rem;
 }
 
 .cam-btn span {
@@ -384,14 +417,14 @@ button, select {
 }
 
 .jump-btn {
-  min-width: 8.8rem;
-  min-height: 5.4rem;
-  background-color: var(--accent-pastel);
+  min-width: 8.2rem;
+  min-height: 5rem;
+  background-color: var(--pill-active-bg);
   color: var(--accent-text);
 }
 
 .jump-btn strong {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
 }
 
 .jump-btn span {
@@ -400,20 +433,22 @@ button, select {
 }
 
 body[data-device="handheld"] .cam-btn {
-  min-width: 6.8rem;
-  min-height: 6rem;
+  min-width: 7.2rem;
+  min-height: 6.4rem;
 }
 
 body[data-device="handheld"] .jump-btn {
-  min-width: 9.8rem;
-  min-height: 6rem;
+  min-width: 10.4rem;
+  min-height: 6.4rem;
 }
 
-/* Glassmorphic Modals & Studio */
+/* =========================================================
+   GLASSMORPHIC MODALS & STUDIO
+   ========================================================= */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  padding: calc(var(--ui-gap) * 2 + 3.2rem) var(--ui-gap) var(--ui-gap);
+  padding: calc(var(--ui-gap) * 2 + 3rem) var(--ui-gap) var(--ui-gap);
   z-index: 40;
   display: grid;
   place-items: center;
@@ -428,19 +463,19 @@ body[data-device="handheld"] .jump-btn {
 }
 
 .modal-card {
-  width: min(94vw, 48rem);
-  max-height: calc(100vh - (var(--ui-gap) * 3 + 3.2rem));
+  width: min(94vw, 46rem);
+  max-height: calc(100vh - (var(--ui-gap) * 3 + 3rem));
   overflow-y: auto;
-  padding: calc(var(--pad-card) * 1.35);
+  padding: calc(var(--pad-card) * 1.3);
   touch-action: pan-y;
 }
 
 .wide-modal {
-  width: min(95vw, 64rem);
+  width: min(95vw, 62rem);
 }
 
 .compact-modal {
-  width: min(92vw, 31rem);
+  width: min(92vw, 30rem);
   text-align: center;
 }
 
@@ -453,7 +488,7 @@ body[data-device="handheld"] .jump-btn {
 .modal-heading-group {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.32rem;
 }
 
 .modal-top-row {
@@ -464,46 +499,48 @@ body[data-device="handheld"] .jump-btn {
 
 .step-badge {
   display: inline-block;
-  padding: 0.38rem 1rem;
+  padding: 0.36rem 0.95rem;
   border-radius: 999px;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 800;
-  background-color: var(--accent-secondary);
+  background-color: var(--secondary-glass-bg);
+  backdrop-filter: blur(12px);
   color: var(--accent-text);
 }
 
 .detect-status {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: var(--text-muted);
 }
 
 .link-btn {
   background-color: var(--pill-bg);
+  backdrop-filter: blur(14px);
   border: 1.5px solid var(--surface-border);
   border-radius: 999px;
   color: var(--text-main);
   cursor: pointer;
   font-weight: 700;
-  font-size: 0.84rem;
-  padding: 0.45rem 1rem;
+  font-size: 0.82rem;
+  padding: 0.42rem 0.95rem;
 }
 
 .modal-title {
-  font-size: 1.7rem;
+  font-size: 1.62rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
 .modal-subtitle {
   color: var(--text-muted);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 600;
 }
 
 .device-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   gap: var(--ui-gap);
 }
 
@@ -517,11 +554,11 @@ body[data-device="handheld"] .jump-btn {
 .device-card-inner {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.55rem;
 }
 
 .device-option.detected-choice {
-  border: 2.5px solid var(--accent-pastel);
+  border: 2.5px solid var(--pill-active-bg);
 }
 
 .device-option:hover,
@@ -536,15 +573,16 @@ body[data-device="handheld"] .jump-btn {
 }
 
 .device-emoji {
-  font-size: 2.1rem;
+  font-size: 2rem;
 }
 
 .detect-pill {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  padding: 0.3rem 0.75rem;
+  padding: 0.28rem 0.72rem;
   border-radius: 999px;
-  background-color: var(--accent-mint);
+  background-color: var(--mint-glass-bg);
+  backdrop-filter: blur(10px);
   color: var(--accent-text);
 }
 
@@ -553,21 +591,23 @@ body[data-device="handheld"] .jump-btn {
 }
 
 .device-option h3 {
-  font-size: 1.08rem;
+  font-size: 1.05rem;
   font-weight: 800;
 }
 
 .device-option p {
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-muted);
   line-height: 1.42;
 }
 
-/* Studio & Live Preview */
+/* =========================================================
+   3-COLUMN EQUIDISTANT STUDIO & TOUCH-ROTATABLE 3D PREVIEW
+   ========================================================= */
 .studio-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(16.5rem, 1fr));
   gap: var(--ui-gap);
 }
 
@@ -588,7 +628,7 @@ body[data-device="handheld"] .jump-btn {
 .field-block {
   display: flex;
   flex-direction: column;
-  gap: 0.48rem;
+  gap: 0.45rem;
 }
 
 .preview-header {
@@ -599,30 +639,33 @@ body[data-device="handheld"] .jump-btn {
 
 .auto-rot-btn {
   background-color: var(--pill-bg);
+  backdrop-filter: blur(14px);
   border: 1.5px solid var(--surface-border);
   border-radius: 999px;
-  padding: 0.25rem 0.75rem;
+  padding: 0.28rem 0.75rem;
   font-size: 0.7rem;
   font-weight: 800;
-  color: var(--text-muted);
+  color: var(--text-main);
   cursor: pointer;
 }
 
 .auto-rot-btn.active {
-  background-color: var(--accent-mint);
+  background-color: var(--mint-glass-bg);
   color: var(--accent-text);
-  border-color: transparent;
+  border-color: var(--text-main);
 }
 
 .preview-stage-wrap {
   width: 100%;
-  height: 13rem;
+  height: 12.2rem;
   border-radius: var(--inner-radius);
   background-color: var(--preview-bg);
+  backdrop-filter: blur(16px);
   border: 1.8px solid var(--surface-border);
   overflow: hidden;
   position: relative;
   cursor: grab;
+  touch-action: none;
 }
 
 .preview-stage-wrap:active {
@@ -636,7 +679,7 @@ body[data-device="handheld"] .jump-btn {
 }
 
 .preview-caption {
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 700;
   text-align: center;
   color: var(--text-muted);
@@ -644,7 +687,7 @@ body[data-device="handheld"] .jump-btn {
 
 .group-label {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -653,56 +696,60 @@ body[data-device="handheld"] .jump-btn {
 
 .glass-select {
   width: 100%;
-  padding: 0.75rem 0.9rem;
-  border-radius: 0.85rem;
+  padding: 0.68rem 0.85rem;
+  border-radius: 0.82rem;
   border: 1.8px solid var(--surface-border);
   background-color: var(--pill-bg);
+  backdrop-filter: blur(18px);
   color: var(--text-main);
   font-weight: 700;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   outline: none;
   cursor: pointer;
 }
 
 .sub-setting-wrap {
-  padding-top: 0.65rem;
+  padding-top: 0.6rem;
   border-top: 1px dashed var(--surface-border);
 }
 
 .seg-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.48rem;
   flex-wrap: wrap;
 }
 
 .seg-btn {
   flex: 1;
-  min-width: 5.2rem;
-  padding: 0.65rem 0.7rem;
+  min-width: 5rem;
+  padding: 0.6rem 0.65rem;
   border-radius: 0.8rem;
   border: 1.8px solid var(--surface-border);
   background-color: var(--pill-bg);
+  backdrop-filter: blur(16px);
   color: var(--text-main);
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.2s ease;
 }
 
 .seg-btn.active {
-  background-color: var(--accent-pastel);
+  background-color: var(--pill-active-bg);
+  backdrop-filter: blur(20px) saturate(190%);
   color: var(--accent-text);
   border-color: var(--text-main);
 }
 
 .swatch-row {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.7rem;
   flex-wrap: wrap;
 }
 
 .swatch {
-  width: 2.2rem;
-  height: 2.2rem;
+  width: 2.15rem;
+  height: 2.15rem;
   border-radius: 50%;
   border: 2px solid var(--surface-border);
   cursor: pointer;
@@ -729,16 +776,17 @@ body[data-device="handheld"] .jump-btn {
 
 .primary-cta,
 .secondary-cta {
-  padding: 0.9rem 1.6rem;
+  padding: 0.85rem 1.5rem;
   border-radius: var(--inner-radius);
   font-weight: 800;
-  font-size: 0.94rem;
+  font-size: 0.9rem;
   cursor: pointer;
   border: 1.8px solid var(--surface-border);
+  backdrop-filter: blur(18px);
 }
 
 .primary-cta {
-  background-color: var(--accent-pastel);
+  background-color: var(--pill-active-bg);
   color: var(--accent-text);
 }
 
@@ -748,8 +796,15 @@ body[data-device="handheld"] .jump-btn {
 }
 
 .revive-btn {
-  background-color: var(--accent-mint);
+  background-color: var(--mint-glass-bg);
   color: var(--accent-text);
+  border-color: var(--text-main);
+}
+
+.revive-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  border-color: var(--surface-border);
 }
 
 .summary-grid {
@@ -760,28 +815,31 @@ body[data-device="handheld"] .jump-btn {
 
 .summary-box {
   background-color: var(--pill-bg);
-  padding: 0.85rem;
+  backdrop-filter: blur(16px);
+  padding: 0.8rem;
   border-radius: var(--inner-radius);
   border: 1.8px solid var(--surface-border);
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.25rem;
   align-items: center;
   justify-content: center;
 }
 
 .summary-box span {
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--text-muted);
 }
 
 .summary-box strong {
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   font-weight: 800;
 }
 
-/* Countdown Overlay */
+/* =========================================================
+   3-SECOND COUNTDOWN OVERLAY
+   ========================================================= */
 .countdown-backdrop {
   position: fixed;
   inset: 0;
@@ -798,24 +856,24 @@ body[data-device="handheld"] .jump-btn {
 }
 
 .countdown-orb {
-  padding: 2rem 3.4rem;
+  padding: 1.9rem 3.2rem;
   text-align: center;
 }
 
 .countdown-inner {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.42rem;
 }
 
 #countdown-number {
-  font-size: 4.2rem;
+  font-size: 4rem;
   font-weight: 900;
   line-height: 1;
 }
 
 #countdown-sub {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: var(--text-muted);
 }

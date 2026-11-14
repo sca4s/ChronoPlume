@@ -4,16 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>ChronoPlume — 3D Aerial Odyssey</title>
-  <!-- Solid Pastel SVG Favicon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23b8a9ff'/%3E%3Cpath d='M14 36c8-14 22-18 36-14-6 8-12 12-20 14 6 2 13 1 18-2-5 9-16 14-28 11l-6 5 3-10c-2-1-3-2-3-4z' fill='%23ffffff'/%3E%3Ccircle cx='39' cy='25' r='3' fill='%231e1b2e'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-  <!-- Main 3D World Viewport -->
   <canvas id="game-canvas"></canvas>
 
-  <!-- Global Top Navigation Bar -->
   <header class="top-bar">
     <div class="brand-pill ui-section">
       <div class="section-content brand-inner">
@@ -27,34 +24,33 @@
     </div>
 
     <div class="top-controls">
-      <button type="button" id="btn-unhide-all" class="action-pill ui-section hidden-btn" title="Restore all hidden panels">
-        <div class="section-content">Unhide All UI</div>
-      </button>
-      <button type="button" id="btn-audio-toggle" class="action-pill ui-section" title="Toggle Procedural Audio">
-        <div class="section-content">
-          <span id="audio-label">SFX: On</span>
+      <div class="diamond-vault-badge ui-section" title="Stored Diamonds in Vault">
+        <div class="section-content vault-inner">
+          💎 <span id="vault-diamond-count">0</span>
         </div>
+      </div>
+      <button type="button" id="btn-unhide-all" class="action-pill ui-section hidden-btn">
+        <div class="section-content">Unhide UI</div>
       </button>
-      <button type="button" id="btn-theme-toggle" class="action-pill ui-section" title="Switch Light / Dark Theme">
-        <div class="section-content">
-          <span id="theme-label">Dark Theme</span>
-        </div>
+      <button type="button" id="btn-audio-toggle" class="action-pill ui-section">
+        <div class="section-content"><span id="audio-label">SFX: On</span></div>
       </button>
-      <button type="button" id="btn-pause" class="action-pill accent-pill ui-section hidden-btn" title="Pause & Settings">
+      <button type="button" id="btn-theme-toggle" class="action-pill ui-section">
+        <div class="section-content"><span id="theme-label">Dark Theme</span></div>
+      </button>
+      <button type="button" id="btn-pause" class="action-pill accent-pill ui-section hidden-btn">
         <div class="section-content">Pause / Settings</div>
       </button>
     </div>
   </header>
 
-  <!-- Equidistant Left Stacking HUD (Slide-Out & Smooth Vertical Reflow) -->
   <aside id="hud-container" class="hud-stack hidden-hud">
-    <!-- HUD Card 1: Live Score & Timer -->
     <div class="hud-slot" data-hud-id="score">
       <div class="hud-card ui-section">
         <div class="section-content hud-card-inner">
           <div class="hud-header">
             <span class="hud-tag">Telemetry</span>
-            <button type="button" class="hud-hide-btn" data-target="score" title="Slide out panel">×</button>
+            <button type="button" class="hud-hide-btn" data-target="score">×</button>
           </div>
           <div class="hud-metrics">
             <div class="metric-box">
@@ -70,13 +66,12 @@
       </div>
     </div>
 
-    <!-- HUD Card 2: High Records -->
     <div class="hud-slot" data-hud-id="records">
       <div class="hud-card ui-section">
         <div class="section-content hud-card-inner">
           <div class="hud-header">
             <span class="hud-tag">Records</span>
-            <button type="button" class="hud-hide-btn" data-target="records" title="Slide out panel">×</button>
+            <button type="button" class="hud-hide-btn" data-target="records">×</button>
           </div>
           <div class="hud-metrics">
             <div class="metric-box">
@@ -92,75 +87,42 @@
       </div>
     </div>
 
-    <!-- HUD Card 3: Chrono, Speed & Camera -->
     <div class="hud-slot" data-hud-id="dynamics">
       <div class="hud-card ui-section">
         <div class="section-content hud-card-inner">
           <div class="hud-header">
             <span class="hud-tag">Flight & Sky</span>
-            <button type="button" class="hud-hide-btn" data-target="dynamics" title="Slide out panel">×</button>
+            <button type="button" class="hud-hide-btn" data-target="dynamics">×</button>
           </div>
           <div class="dynamics-grid">
-            <div class="dyn-row">
-              <span>Bird Speed (A/D)</span>
-              <strong id="hud-bird-speed">1.0x</strong>
-            </div>
-            <div class="dyn-row">
-              <span>Sky Cycle (W/S)</span>
-              <strong id="hud-cycle-speed">1.0x</strong>
-            </div>
-            <div class="dyn-row">
-              <span>Sky Mode</span>
-              <strong id="hud-sky-phase">Dynamic (Day)</strong>
-            </div>
-            <div class="dyn-row">
-              <span>Camera (C)</span>
-              <strong id="hud-cam-mode">Classic 3D</strong>
-            </div>
+            <div class="dyn-row"><span>Speed (A/D)</span><strong id="hud-bird-speed">1.0x</strong></div>
+            <div class="dyn-row"><span>Sky Cycle (W/S)</span><strong id="hud-cycle-speed">1.0x</strong></div>
+            <div class="dyn-row"><span>Biome</span><strong id="hud-biome-name">Meadow</strong></div>
+            <div class="dyn-row"><span>Camera (C)</span><strong id="hud-cam-mode">Classic 3D</strong></div>
           </div>
         </div>
       </div>
     </div>
   </aside>
 
-  <!-- Equidistant On-Screen Controls -->
   <div id="device-controls" class="device-controls hidden-hud">
     <div class="control-cluster left-cluster ui-section">
       <div class="section-content cluster-grid">
-        <button type="button" class="ctrl-btn" id="btn-cycle-fast" title="Accelerate Sky Cycle (W)">
-          <strong>W</strong>
-          <span>Cycle+</span>
-        </button>
-        <button type="button" class="ctrl-btn" id="btn-cycle-slow" title="Decelerate Sky Cycle (S)">
-          <strong>S</strong>
-          <span>Cycle-</span>
-        </button>
-        <button type="button" class="ctrl-btn" id="btn-speed-up" title="Accelerate Bird (A)">
-          <strong>A</strong>
-          <span>Speed+</span>
-        </button>
-        <button type="button" class="ctrl-btn" id="btn-speed-down" title="Decelerate Bird (D)">
-          <strong>D</strong>
-          <span>Speed-</span>
-        </button>
+        <button type="button" class="ctrl-btn" id="btn-cycle-fast"><strong>W</strong><span>Cycle+</span></button>
+        <button type="button" class="ctrl-btn" id="btn-cycle-slow"><strong>S</strong><span>Cycle-</span></button>
+        <button type="button" class="ctrl-btn" id="btn-speed-up"><strong>A</strong><span>Speed+</span></button>
+        <button type="button" class="ctrl-btn" id="btn-speed-down"><strong>D</strong><span>Speed-</span></button>
       </div>
     </div>
 
     <div class="control-cluster right-cluster ui-section">
       <div class="section-content right-deck-layout">
-        <button type="button" class="ctrl-btn cam-btn" id="btn-cam-toggle" title="Switch Camera View (C)">
-          <strong>CAM</strong>
-          <span id="cam-btn-label">POV (C)</span>
-        </button>
-        <button type="button" class="ctrl-btn jump-btn" id="btn-jump" title="Flap Wings (Up Arrow or Tap)">
-          <strong>▲</strong>
-          <span>FLAP</span>
-        </button>
+        <button type="button" class="ctrl-btn cam-btn" id="btn-cam-toggle"><strong>CAM</strong><span id="cam-btn-label">POV (C)</span></button>
+        <button type="button" class="ctrl-btn jump-btn" id="btn-jump"><strong>▲</strong><span>FLAP</span></button>
       </div>
     </div>
   </div>
 
-  <!-- INITIATION SCREEN 1: Auto-Detected Device Selection -->
   <section id="screen-device" class="modal-backdrop active-screen">
     <div class="modal-card ui-section">
       <div class="section-content modal-stack">
@@ -170,7 +132,7 @@
         </div>
         <div class="modal-heading-group">
           <h1 class="modal-title">Select Playing Device</h1>
-          <p class="modal-subtitle">Your hardware has been pre-detected. Choose a control layout to proceed.</p>
+          <p class="modal-subtitle">Proportional UI scaling adapts automatically to your screen size.</p>
         </div>
 
         <div class="device-grid">
@@ -181,7 +143,7 @@
                 <span class="detect-pill hidden-badge" id="badge-desktop">Detected</span>
               </div>
               <h3>Desktop & Keyboard</h3>
-              <p>Precision keys (↑ Flap, A/D Bird Speed, W/S Sky Cycle, C Camera POV) with a proportional control dock.</p>
+              <p>Precision keyboard controls (↑ Flap, A/D Speed, W/S Sky, C Camera) with responsive desktop scaling.</p>
             </div>
           </button>
 
@@ -192,7 +154,7 @@
                 <span class="detect-pill hidden-badge" id="badge-handheld">Detected</span>
               </div>
               <h3>Touch Handheld (Mobile & Tablet)</h3>
-              <p>Unified touch ergonomics for phones and tablets with responsive thumb pads, POV toggle, and tap-anywhere flight.</p>
+              <p>Enlarged multi-touch thumb decks, touch-to-flap screen areas, and tactile glassmorphic controls.</p>
             </div>
           </button>
         </div>
@@ -200,7 +162,6 @@
     </div>
   </section>
 
-  <!-- INITIATION SCREEN 2 & PAUSE CUSTOMIZER (Shared Live 3D Bird Preview + Settings) -->
   <section id="screen-customize" class="modal-backdrop">
     <div class="modal-card wide-modal ui-section">
       <div class="section-content modal-stack">
@@ -211,30 +172,37 @@
         <h1 class="modal-title" id="customize-title">World & Bird Studio</h1>
 
         <div class="studio-grid">
-          <!-- Column 1: Dedicated 3D Bird Live Preview Viewport -->
           <div class="preview-card ui-section">
             <div class="section-content preview-inner">
               <div class="preview-header">
-                <span class="group-label">Live 3D Bird Preview</span>
-                <span class="preview-tag" id="preview-chassis-label">Aero Orb</span>
+                <span class="group-label">Interactive 3D Bird Preview</span>
+                <button type="button" id="btn-auto-rotate" class="auto-rot-btn active">Auto-Rotate: On</button>
               </div>
               <div class="preview-stage-wrap">
                 <canvas id="bird-preview-canvas"></canvas>
               </div>
-              <p class="preview-caption">Matte pastel 360° live inspection</p>
+              <p class="preview-caption">Drag/Swipe to rotate 360° manually</p>
             </div>
           </div>
 
-          <!-- Column 2: World Biome, 3 Sky Modes & Camera -->
           <div class="custom-group ui-section">
             <div class="section-content custom-group-stack">
               <div class="field-block">
-                <label class="group-label">Realm Biome</label>
-                <div class="seg-buttons" id="bg-selector">
-                  <button type="button" class="seg-btn active" data-bg="meadow">Pastel Meadow</button>
-                  <button type="button" class="seg-btn" data-bg="crystal">Crystal Lagoon</button>
-                  <button type="button" class="seg-btn" data-bg="sunset">Peach Blossom</button>
-                </div>
+                <label class="group-label">Interactive 3D Sky Biome (12 Realms)</label>
+                <select id="biome-select" class="glass-select">
+                  <option value="meadow">1. Alpine Meadows: Rolling hills & peaks</option>
+                  <option value="sanctum">2. Royal Sanctum: Marble rotunda & crowns</option>
+                  <option value="cyberdrift">3. Cyberpunk Drift: Synthwave neon portals</option>
+                  <option value="angelic">4. Angelic Cloud: Celestial pillows & halos</option>
+                  <option value="lagoon">5. Pastel Lagoon: Turquoise atoll & parasols</option>
+                  <option value="lofi">6. Lo-Fi Cafe: Walnut tabletop & turntable</option>
+                  <option value="gothicbalcony">7. Gothic Balcony: Lancet arches & rose window</option>
+                  <option value="gothiccastle">8. Gothic Castle: Crenelated turrets & braziers</option>
+                  <option value="forest">9. Enchanted Forest: Pine tiers & fireflies</option>
+                  <option value="cyberterrace">10. Cyberpunk Terrace: Rooftop neon deck</option>
+                  <option value="desert">11. Sandstone Desert: Red canyons & oasis</option>
+                  <option value="reef">12. Abyssal Reef: Coral clusters & bubbles</option>
+                </select>
               </div>
 
               <div class="field-block">
@@ -246,7 +214,6 @@
                 </div>
               </div>
 
-              <!-- Shown only when Celestial Mode is Dynamic -->
               <div id="dynamic-start-wrap" class="field-block sub-setting-wrap">
                 <label class="group-label">Dynamic Starting Phase</label>
                 <div class="seg-buttons" id="scene-selector">
@@ -265,7 +232,6 @@
             </div>
           </div>
 
-          <!-- Column 3: Bird Chassis & Matte Pastel Swatches -->
           <div class="custom-group ui-section">
             <div class="section-content custom-group-stack">
               <div class="field-block">
@@ -280,35 +246,33 @@
               <div class="field-block">
                 <label class="group-label">Body Matte Pastel Hue</label>
                 <div class="swatch-row" id="body-color-selector">
-                  <button type="button" class="swatch active" data-color="#f48fb1" style="background:#f48fb1" title="Pastel Rose"></button>
-                  <button type="button" class="swatch" data-color="#6ee7b7" style="background:#6ee7b7" title="Pastel Mint"></button>
-                  <button type="button" class="swatch" data-color="#b4a0ff" style="background:#b4a0ff" title="Pastel Lavender"></button>
-                  <button type="button" class="swatch" data-color="#fcd34d" style="background:#fcd34d" title="Pastel Buttercup"></button>
-                  <button type="button" class="swatch" data-color="#7dd3fc" style="background:#7dd3fc" title="Pastel Sky"></button>
+                  <button type="button" class="swatch active" data-color="#f48fb1" style="background:#f48fb1"></button>
+                  <button type="button" class="swatch" data-color="#6ee7b7" style="background:#6ee7b7"></button>
+                  <button type="button" class="swatch" data-color="#b4a0ff" style="background:#b4a0ff"></button>
+                  <button type="button" class="swatch" data-color="#fcd34d" style="background:#fcd34d"></button>
+                  <button type="button" class="swatch" data-color="#7dd3fc" style="background:#7dd3fc"></button>
                 </div>
               </div>
 
               <div class="field-block">
                 <label class="group-label">Wing & Tail Matte Hue</label>
                 <div class="swatch-row" id="wing-color-selector">
-                  <button type="button" class="swatch active" data-color="#fff8fc" style="background:#fff8fc" title="Soft Alabaster"></button>
-                  <button type="button" class="swatch" data-color="#bae6fd" style="background:#bae6fd" title="Ice Pastel"></button>
-                  <button type="button" class="swatch" data-color="#fbcfe8" style="background:#fbcfe8" title="Blush Pastel"></button>
-                  <button type="button" class="swatch" data-color="#ddd6fe" style="background:#ddd6fe" title="Lilac Pastel"></button>
-                  <button type="button" class="swatch" data-color="#fef08a" style="background:#fef08a" title="Lemon Pastel"></button>
+                  <button type="button" class="swatch active" data-color="#fff8fc" style="background:#fff8fc"></button>
+                  <button type="button" class="swatch" data-color="#bae6fd" style="background:#bae6fd"></button>
+                  <button type="button" class="swatch" data-color="#fbcfe8" style="background:#fbcfe8"></button>
+                  <button type="button" class="swatch" data-color="#ddd6fe" style="background:#ddd6fe"></button>
+                  <button type="button" class="swatch" data-color="#fef08a" style="background:#fef08a"></button>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Home Mode Actions -->
         <div id="home-actions" class="launch-actions">
           <button type="button" id="btn-resume-saved" class="secondary-cta hidden-btn">Resume Saved Session</button>
           <button type="button" id="btn-start-game" class="primary-cta">Launch Odyssey</button>
         </div>
 
-        <!-- Pause Mode Actions (Shown when opened via Pause button) -->
         <div id="pause-actions" class="launch-actions hidden-btn">
           <button type="button" id="btn-save-leave" class="secondary-cta">Save Progress & Return Home</button>
           <button type="button" id="btn-resume-play" class="primary-cta">Apply & Resume (3s Timer)</button>
@@ -317,7 +281,6 @@
     </div>
   </section>
 
-  <!-- 3-Second Countdown Overlay -->
   <div id="countdown-overlay" class="countdown-backdrop hidden-screen">
     <div class="countdown-orb ui-section">
       <div class="section-content countdown-inner">
@@ -327,7 +290,6 @@
     </div>
   </div>
 
-  <!-- Game Over Modal -->
   <section id="screen-gameover" class="modal-backdrop">
     <div class="modal-card compact-modal ui-section">
       <div class="section-content modal-stack">
@@ -336,24 +298,13 @@
           <h2 class="modal-title">Wing Impact</h2>
         </div>
         <div class="summary-grid">
-          <div class="summary-box">
-            <span>Score</span>
-            <strong id="final-score">0</strong>
-          </div>
-          <div class="summary-box">
-            <span>Flight Time</span>
-            <strong id="final-time">0.0s</strong>
-          </div>
-          <div class="summary-box">
-            <span>Best Score</span>
-            <strong id="final-best-score">0</strong>
-          </div>
-          <div class="summary-box">
-            <span>Longest Time</span>
-            <strong id="final-best-time">0.0s</strong>
-          </div>
+          <div class="summary-box"><span>Score</span><strong id="final-score">0</strong></div>
+          <div class="summary-box"><span>Flight Time</span><strong id="final-time">0.0s</strong></div>
+          <div class="summary-box"><span>Best Score</span><strong id="final-best-score">0</strong></div>
+          <div class="summary-box"><span>Longest Time</span><strong id="final-best-time">0.0s</strong></div>
         </div>
         <div class="vertical-actions">
+          <button type="button" id="btn-revive" class="primary-cta revive-btn hidden-btn">💎 Revive Flight (Cost: 5)</button>
           <button type="button" id="btn-retry" class="primary-cta">Fly Again</button>
           <button type="button" id="btn-gameover-home" class="secondary-cta">Customize / Home</button>
         </div>

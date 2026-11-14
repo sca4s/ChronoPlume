@@ -29,19 +29,43 @@
       if (!enabled) return;
       const audio = initContext();
       if (!audio) return;
+
       const now = audio.currentTime;
       const osc = audio.createOscillator();
       const gain = audio.createGain();
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(190, now);
       osc.frequency.exponentialRampToValueAtTime(430, now + 0.11);
+
       gain.gain.setValueAtTime(0.001, now);
       gain.gain.linearRampToValueAtTime(0.15, now + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+
       osc.connect(gain);
       gain.connect(audio.destination);
       osc.start(now);
       osc.stop(now + 0.14);
+
+      if (noiseBuffer) {
+        const noise = audio.createBufferSource();
+        noise.buffer = noiseBuffer;
+        const filter = audio.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(920, now);
+        filter.frequency.exponentialRampToValueAtTime(2400, now + 0.12);
+        filter.Q.value = 1.8;
+
+        const nGain = audio.createGain();
+        nGain.gain.setValueAtTime(0.001, now);
+        nGain.gain.linearRampToValueAtTime(0.08, now + 0.025);
+        nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+
+        noise.connect(filter);
+        filter.connect(nGain);
+        nGain.connect(audio.destination);
+        noise.start(now);
+        noise.stop(now + 0.14);
+      }
     }
 
     function score() {
@@ -71,18 +95,21 @@
       const audio = initContext();
       if (!audio) return;
       const now = audio.currentTime;
-      const osc = audio.createOscillator();
-      const gain = audio.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(1760, now); // A6
-      osc.frequency.exponentialRampToValueAtTime(2637.02, now + 0.2); // E7
-      gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.15, now + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.28);
-      osc.connect(gain);
-      gain.connect(audio.destination);
-      osc.start(now);
-      osc.stop(now + 0.3);
+      const notes = [1567.98, 2093.0, 2637.02];
+      notes.forEach((freq, i) => {
+        const t = now + i * 0.045;
+        const osc = audio.createOscillator();
+        const gain = audio.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.001, t);
+        gain.gain.linearRampToValueAtTime(0.14, t + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.26);
+        osc.connect(gain);
+        gain.connect(audio.destination);
+        osc.start(t);
+        osc.stop(t + 0.28);
+      });
     }
 
     function cameraSwitch(toPov) {
@@ -92,18 +119,18 @@
       const now = audio.currentTime;
       const startFreq = toPov ? 310 : 680;
       const endFreq = toPov ? 740 : 290;
-      const osc1 = audio.createOscillator();
+      const osc = audio.createOscillator();
       const gain = audio.createGain();
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(startFreq, now);
-      osc1.frequency.exponentialRampToValueAtTime(endFreq, now + 0.22);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(startFreq, now);
+      osc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.22);
       gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.1, now + 0.04);
+      gain.gain.linearRampToValueAtTime(0.11, now + 0.04);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
-      osc1.connect(gain);
+      osc.connect(gain);
       gain.connect(audio.destination);
-      osc1.start(now);
-      osc1.stop(now + 0.25);
+      osc.start(now);
+      osc.stop(now + 0.25);
     }
 
     function themeTransition(toDark) {
@@ -118,7 +145,7 @@
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, now);
         gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(0.04, now + 0.22);
+        gain.gain.linearRampToValueAtTime(0.045, now + 0.22);
         gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.7);
         osc.connect(gain);
         gain.connect(audio.destination);
@@ -172,7 +199,17 @@
       return enabled;
     }
 
-    return { initContext, flap, score, diamondCollect, cameraSwitch, themeTransition, countdownTick, impact, toggleMute };
+    return {
+      initContext,
+      flap,
+      score,
+      diamondCollect,
+      cameraSwitch,
+      themeTransition,
+      countdownTick,
+      impact,
+      toggleMute
+    };
   })();
 
   /* =========================================================
@@ -181,6 +218,7 @@
   function bindTouchAndClick(element, handler, options = { preventDefault: true }) {
     if (!element) return;
     let lastTouchTime = 0;
+
     element.addEventListener(
       'touchstart',
       (e) => {
@@ -192,9 +230,11 @@
       },
       { passive: !options.preventDefault }
     );
+
     const clearActive = () => element.classList.remove('touch-active');
     element.addEventListener('touchend', clearActive, { passive: true });
     element.addEventListener('touchcancel', clearActive, { passive: true });
+
     element.addEventListener('click', (e) => {
       if (performance.now() - lastTouchTime < 450) return;
       SoundFX.initContext();
@@ -206,16 +246,18 @@
      STORAGE KEYS & STATE
      ========================================================= */
   const STORAGE_KEYS = {
-    BEST_SCORE: 'chronoplume_best_score_v5',
-    BEST_TIME: 'chronoplume_best_time_v5',
-    VAULT_DIAMONDS: 'chronoplume_vault_diamonds_v1',
-    SAVED_GAME: 'chronoplume_saved_session_v5'
+    BEST_SCORE: 'chronoplume_best_score_v6',
+    BEST_TIME: 'chronoplume_best_time_v6',
+    VAULT_DIAMONDS: 'chronoplume_vault_diamonds_v6',
+    SAVED_GAME: 'chronoplume_saved_session_v6'
   };
+
+  const REVIVE_COST = 1;
 
   const state = {
     device: 'desktop',
     theme: 'light',
-    bgBiome: 'meadow', // 12 biomes support
+    bgBiome: 'meadow',
     skyMode: 'dynamic',
     initialScene: 'day',
     cameraMode: 'classic',
@@ -254,6 +296,7 @@
   const dom = {
     canvas: document.getElementById('game-canvas'),
     previewCanvas: document.getElementById('bird-preview-canvas'),
+    previewTouchStage: document.getElementById('preview-touch-stage'),
     vaultDiamondCount: document.getElementById('vault-diamond-count'),
     btnAutoRotate: document.getElementById('btn-auto-rotate'),
 
@@ -308,7 +351,7 @@
     finalScore: document.getElementById('final-score'),
     finalTime: document.getElementById('final-time'),
     finalBestScore: document.getElementById('final-best-score'),
-    finalBestTime: document.getElementById('final-best-time')
+    finalVaultDiamonds: document.getElementById('final-vault-diamonds')
   };
 
   dom.vaultDiamondCount.textContent = state.vaultDiamonds;
@@ -332,7 +375,8 @@
       dom.optDesktop.classList.remove('detected-choice');
       dom.badgeHandheld.classList.remove('hidden-badge');
       dom.badgeDesktop.classList.add('hidden-badge');
-      dom.autodetectStatus.textContent = window.innerWidth >= 700 ? 'Detected: Tablet / Touch' : 'Detected: Mobile Handheld';
+      dom.autodetectStatus.textContent =
+        window.innerWidth >= 700 ? 'Detected: Tablet / Touch Hybrid' : 'Detected: Mobile Handheld';
     } else {
       dom.optDesktop.classList.add('detected-choice');
       dom.optHandheld.classList.remove('detected-choice');
@@ -345,7 +389,7 @@
   autoDetectDeviceProfile();
 
   /* =========================================================
-     THEME PLAGUE TRANSITION
+     UPPER-LEFT BLURRED PLAGUE THEME TRANSITION
      ========================================================= */
   bindTouchAndClick(dom.btnAudio, () => {
     const isOn = SoundFX.toggleMute();
@@ -363,7 +407,7 @@
     SoundFX.themeTransition(state.theme === 'dark');
 
     if (previewRenderer) {
-      previewRenderer.setClearColor(state.theme === 'light' ? 0xe3f1ff : 0x25213b, 1);
+      previewRenderer.setClearColor(state.theme === 'light' ? 0xd8eeff : 0x221d3a, 1);
     }
 
     const sections = document.querySelectorAll('.ui-section');
@@ -408,7 +452,7 @@
   bindTouchAndClick(dom.btnTheme, triggerPlagueThemeTransition);
 
   /* =========================================================
-     HUD SLIDE-OUT & REFLOW
+     INDIVIDUAL HUD SLIDE-OUT & VERTICAL REFLOW
      ========================================================= */
   document.querySelectorAll('.hud-hide-btn').forEach((btn) => {
     bindTouchAndClick(btn, () => {
@@ -442,7 +486,7 @@
     const bodyMat = new THREE.MeshStandardMaterial({
       color: bodyColorObj,
       emissive: bodyColorObj,
-      emissiveIntensity: 0.12,
+      emissiveIntensity: 0.14,
       roughness: 0.92,
       metalness: 0.0
     });
@@ -450,7 +494,7 @@
     const wingMat = new THREE.MeshStandardMaterial({
       color: wingColorObj,
       emissive: wingColorObj,
-      emissiveIntensity: 0.1,
+      emissiveIntensity: 0.12,
       roughness: 0.9,
       metalness: 0.0
     });
@@ -477,14 +521,20 @@
 
     const beak = new THREE.Mesh(
       new THREE.ConeGeometry(0.19, 0.48, 14),
-      new THREE.MeshStandardMaterial({ color: 0xffb84d, roughness: 0.9, metalness: 0.0 })
+      new THREE.MeshStandardMaterial({
+        color: 0xffb84d,
+        emissive: 0xffb84d,
+        emissiveIntensity: 0.1,
+        roughness: 0.9,
+        metalness: 0.0
+      })
     );
     beak.rotation.z = -Math.PI / 2;
     beak.position.set(0.68, 0.04, 0);
     targetGroup.add(beak);
 
     const eyeGeo = new THREE.SphereGeometry(0.1, 14, 14);
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1d1730 });
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1b142e });
     const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
     eyeL.position.set(0.38, 0.22, 0.42);
     const eyeR = eyeL.clone();
@@ -508,17 +558,17 @@
     return { leftPivot, rightPivot };
   }
 
-  // Preview Stage & Direct Touch Orbit Drag
+  // Dedicated 3D Preview Stage with Direct Touch/Mouse Orbit
   const previewScene = new THREE.Scene();
   const previewCamera = new THREE.PerspectiveCamera(40, 1.6, 0.1, 30);
   previewCamera.position.set(1.65, 0.72, 2.75);
   previewCamera.lookAt(0, 0.04, 0);
 
   const previewRenderer = new THREE.WebGLRenderer({ canvas: dom.previewCanvas, antialias: true });
-  previewRenderer.setClearColor(0xe3f1ff, 1);
+  previewRenderer.setClearColor(0xd8eeff, 1);
   previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-  previewScene.add(new THREE.HemisphereLight(0xffffff, 0xd8cff8, 0.75));
+  previewScene.add(new THREE.HemisphereLight(0xffffff, 0xd8cff8, 0.78));
   const prevKeyLight = new THREE.DirectionalLight(0xfff5eb, 0.55);
   prevKeyLight.position.set(3, 5, 4);
   previewScene.add(prevKeyLight);
@@ -528,43 +578,51 @@
   let previewWings = { leftPivot: null, rightPivot: null };
 
   let isDraggingPreview = false;
-  let prevMouseX = 0;
-  let prevMouseY = 0;
+  let lastPointerX = 0;
+  let lastPointerY = 0;
 
-  const stageWrap = dom.previewCanvas.parentElement;
-  stageWrap.addEventListener('pointerdown', (e) => {
+  dom.previewTouchStage.addEventListener('pointerdown', (e) => {
     isDraggingPreview = true;
     state.autoRotatePreview = false;
     dom.btnAutoRotate.classList.remove('active');
     dom.btnAutoRotate.textContent = 'Auto-Rotate: Off';
-    prevMouseX = e.clientX;
-    prevMouseY = e.clientY;
-    stageWrap.setPointerCapture(e.pointerId);
+    lastPointerX = e.clientX;
+    lastPointerY = e.clientY;
+    dom.previewTouchStage.setPointerCapture(e.pointerId);
   });
 
-  stageWrap.addEventListener('pointermove', (e) => {
+  dom.previewTouchStage.addEventListener('pointermove', (e) => {
     if (!isDraggingPreview) return;
-    const dx = e.clientX - prevMouseX;
-    const dy = e.clientY - prevMouseY;
+    const dx = e.clientX - lastPointerX;
+    const dy = e.clientY - lastPointerY;
     previewBirdGroup.rotation.y += dx * 0.012;
-    previewBirdGroup.rotation.x += dy * 0.012;
-    prevMouseX = e.clientX;
-    prevMouseY = e.clientY;
+    previewBirdGroup.rotation.x = Math.max(-0.85, Math.min(0.85, previewBirdGroup.rotation.x + dy * 0.012));
+    lastPointerX = e.clientX;
+    lastPointerY = e.clientY;
   });
 
-  stageWrap.addEventListener('pointerup', (e) => {
+  const endPreviewDrag = (e) => {
+    if (!isDraggingPreview) return;
     isDraggingPreview = false;
-    stageWrap.releasePointerCapture(e.pointerId);
-  });
+    try {
+      dom.previewTouchStage.releasePointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  dom.previewTouchStage.addEventListener('pointerup', endPreviewDrag);
+  dom.previewTouchStage.addEventListener('pointercancel', endPreviewDrag);
 
   bindTouchAndClick(dom.btnAutoRotate, () => {
     state.autoRotatePreview = !state.autoRotatePreview;
     dom.btnAutoRotate.classList.toggle('active', state.autoRotatePreview);
     dom.btnAutoRotate.textContent = state.autoRotatePreview ? 'Auto-Rotate: On' : 'Auto-Rotate: Off';
+    if (state.autoRotatePreview) {
+      previewBirdGroup.rotation.x = 0;
+    }
   });
 
   function resizePreviewStage() {
-    const rect = stageWrap.getBoundingClientRect();
+    const rect = dom.previewTouchStage.getBoundingClientRect();
     if (rect.width > 0 && rect.height > 0) {
       previewCamera.aspect = rect.width / rect.height;
       previewCamera.updateProjectionMatrix();
@@ -573,10 +631,10 @@
   }
 
   /* =========================================================
-     MAIN THREE.JS 3D WORLD & 12 INTERACTIVE 3D BIOMES
+     MAIN THREE.JS 3D WORLD & 12 INTERACTIVE SKY BIOMES
      ========================================================= */
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0xd8ecff, 0.015);
+  scene.fog = new THREE.FogExp2(0xd8ecff, 0.014);
 
   const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 240);
   const camCurrentPos = new THREE.Vector3(-2, 0.8, 13.5);
@@ -584,21 +642,32 @@
   camera.position.copy(camCurrentPos);
   camera.lookAt(camCurrentLook);
 
-  const renderer = new THREE.WebGLRenderer({ canvas: dom.canvas, antialias: true, powerPreference: 'high-performance' });
+  const renderer = new THREE.WebGLRenderer({
+    canvas: dom.canvas,
+    antialias: true,
+    powerPreference: 'high-performance'
+  });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-  const hemiLight = new THREE.HemisphereLight(0xffffff, 0xc7d2fe, 0.68);
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0xc7d2fe, 0.72);
   scene.add(hemiLight);
   const dirLight = new THREE.DirectionalLight(0xfff6e5, 0.68);
   dirLight.position.set(12, 24, 14);
   scene.add(dirLight);
 
+  // Sun, Moon & Starfield
   const celestialGroup = new THREE.Group();
   scene.add(celestialGroup);
-  const sunMesh = new THREE.Mesh(new THREE.SphereGeometry(2.3, 24, 24), new THREE.MeshBasicMaterial({ color: 0xffe484 }));
+  const sunMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(2.3, 24, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffe484 })
+  );
   celestialGroup.add(sunMesh);
-  const moonMesh = new THREE.Mesh(new THREE.SphereGeometry(1.8, 24, 24), new THREE.MeshBasicMaterial({ color: 0xf1f5f9 }));
+  const moonMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(1.8, 24, 24),
+    new THREE.MeshBasicMaterial({ color: 0xf1f5f9 })
+  );
   celestialGroup.add(moonMesh);
 
   const starGeo = new THREE.BufferGeometry();
@@ -613,16 +682,28 @@
   const stars = new THREE.Points(starGeo, starMat);
   scene.add(stars);
 
+  // 3D Volumetric Clouds
   const cloudGroup = new THREE.Group();
   scene.add(cloudGroup);
   const clouds = [];
-  const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0.0, flatShading: true });
+  const cloudMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.95,
+    metalness: 0.0,
+    flatShading: true
+  });
 
   function createVolumetricCloud() {
     const cluster = new THREE.Group();
     const puffGeo = new THREE.DodecahedronGeometry(1.1, 1);
-    const offsets = [{x:0,y:0,z:0,s:1.25}, {x:-1.1,y:-0.15,z:0.2,s:0.95}, {x:1.15,y:-0.1,z:-0.15,s:1.0}, {x:-0.45,y:0.55,z:-0.2,s:0.85}, {x:0.5,y:0.48,z:0.25,s:0.9}];
-    offsets.forEach(p => {
+    const offsets = [
+      { x: 0, y: 0, z: 0, s: 1.25 },
+      { x: -1.1, y: -0.15, z: 0.2, s: 0.95 },
+      { x: 1.15, y: -0.1, z: -0.15, s: 1.0 },
+      { x: -0.45, y: 0.55, z: -0.2, s: 0.85 },
+      { x: 0.5, y: 0.48, z: 0.25, s: 0.9 }
+    ];
+    offsets.forEach((p) => {
       const puff = new THREE.Mesh(puffGeo, cloudMat);
       puff.position.set(p.x, p.y, p.z);
       puff.scale.setScalar(p.s);
@@ -640,24 +721,306 @@
     clouds.push({ mesh: cMesh, speedFactor: 0.2 + Math.random() * 0.28 });
   }
 
-  const decorGroup = new THREE.Group();
-  scene.add(decorGroup);
-  const islandMeshes = [];
-  const islandMat = new THREE.MeshStandardMaterial({ color: 0x99f6e4, roughness: 0.9, flatShading: true });
-  const capMat = new THREE.MeshStandardMaterial({ color: 0xa7f3d0, roughness: 0.9, flatShading: true });
+  /* =========================================================
+     12 INTERACTIVE 3D SKY BIOME ARCHITECTURE GENERATOR
+     (Bird flies through/past custom 3D spires, rings, mugs, etc.)
+     ========================================================= */
+  const biomeSceneryGroup = new THREE.Group();
+  scene.add(biomeSceneryGroup);
+  let biomeProps = [];
 
-  for (let i = 0; i < 10; i++) {
-    const islHolder = new THREE.Group();
-    const baseCone = new THREE.Mesh(new THREE.ConeGeometry(2.4 + (i%3)*0.7, 4.8, 7), islandMat);
-    baseCone.rotation.x = Math.PI;
-    const topCap = new THREE.Mesh(new THREE.CylinderGeometry(2.5 + (i%3)*0.7, 2.3, 0.5, 7), capMat);
-    topCap.position.y = 2.4;
-    islHolder.add(baseCone, topCap);
-    islHolder.position.set(-18 + i * 8.5, -7.2 - Math.random() * 2, (i%2===0?-1:-1)*(9+Math.random()*7));
-    decorGroup.add(islHolder);
-    islandMeshes.push(islHolder);
+  const BIOME_CONFIG = {
+    meadow: {
+      name: 'Alpine Meadows',
+      daySky: 0xcffafe,
+      nightSky: 0x161930,
+      cloudDay: 0xffffff,
+      cloudNight: 0x8b95c9,
+      pillars: [0x86efac, 0x93c5fd, 0xa5b4fc]
+    },
+    sanctum: {
+      name: 'Royal Sanctum',
+      daySky: 0xfef9c3,
+      nightSky: 0x1e1836,
+      cloudDay: 0xfffbeb,
+      cloudNight: 0x9f8ad4,
+      pillars: [0xfde047, 0xfef08a, 0xe9d5ff]
+    },
+    cyberdrift: {
+      name: 'Cyberpunk Drift',
+      daySky: 0xfce7f3,
+      nightSky: 0x0f0a1c,
+      cloudDay: 0xfbcfe8,
+      cloudNight: 0x701a75,
+      pillars: [0xf472b6, 0x38bdf8, 0xc084fc]
+    },
+    angelic: {
+      name: 'Angelic Cloud',
+      daySky: 0xf0f9ff,
+      nightSky: 0x172554,
+      cloudDay: 0xffffff,
+      cloudNight: 0x93c5fd,
+      pillars: [0xfef08a, 0xffffff, 0xbae6fd]
+    },
+    lagoon: {
+      name: 'Pastel Lagoon',
+      daySky: 0xccfbf1,
+      nightSky: 0x083344,
+      cloudDay: 0xf0fdfa,
+      cloudNight: 0x2dd4bf,
+      pillars: [0x5eead4, 0xfda4af, 0xfde047]
+    },
+    lofi: {
+      name: 'Lo-Fi Cafe',
+      daySky: 0xffedd5,
+      nightSky: 0x27171c,
+      cloudDay: 0xfff7ed,
+      cloudNight: 0x9a6b78,
+      pillars: [0xfdba74, 0xf9a8d4, 0xd6d3d1]
+    },
+    gothicbalcony: {
+      name: 'Gothic Balcony',
+      daySky: 0xe2e8f0,
+      nightSky: 0x111827,
+      cloudDay: 0xf1f5f9,
+      cloudNight: 0x64748b,
+      pillars: [0x94a3b8, 0xc084fc, 0xf472b6]
+    },
+    gothiccastle: {
+      name: 'Gothic Castle',
+      daySky: 0xdbeafe,
+      nightSky: 0x0f172a,
+      cloudDay: 0xe2e8f0,
+      cloudNight: 0x475569,
+      pillars: [0x64748b, 0xfb923c, 0x94a3b8]
+    },
+    forest: {
+      name: 'Enchanted Forest',
+      daySky: 0xdcfce7,
+      nightSky: 0x06281e,
+      cloudDay: 0xf0fdf4,
+      cloudNight: 0x34d399,
+      pillars: [0x4ade80, 0xa7f3d0, 0xfef08a]
+    },
+    cyberterrace: {
+      name: 'Cyberpunk Terrace',
+      daySky: 0xf5d0fe,
+      nightSky: 0x090d1f,
+      cloudDay: 0xfae8ff,
+      cloudNight: 0x6366f1,
+      pillars: [0xe879f9, 0x22d3ee, 0x818cf8]
+    },
+    desert: {
+      name: 'Sandstone Desert',
+      daySky: 0xfef3c7,
+      nightSky: 0x291518,
+      cloudDay: 0xfffbeb,
+      cloudNight: 0xb45309,
+      pillars: [0xfb923c, 0xfcd34d, 0x4ade80]
+    },
+    reef: {
+      name: 'Abyssal Reef',
+      daySky: 0xcffafe,
+      nightSky: 0x042f2e,
+      cloudDay: 0xe0f2fe,
+      cloudNight: 0x0ea5e9,
+      pillars: [0xf472b6, 0x2dd4bf, 0xc084fc]
+    }
+  };
+
+  function createBiomePropMesh(biomeKey, index) {
+    const holder = new THREE.Group();
+    const matA = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, flatShading: true });
+    const matB = new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.75, flatShading: true });
+    const matC = new THREE.MeshStandardMaterial({ color: 0xf472b6, roughness: 0.85, flatShading: true });
+
+    switch (biomeKey) {
+      case 'sanctum': {
+        // Marble fluted rotunda pillar + golden ring + floating crown jewel
+        matA.color.setHex(0xf8fafc);
+        matB.color.setHex(0xfacc15);
+        matC.color.setHex(0xc084fc);
+        const col = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.3, 8, 12), matA);
+        const goldRing = new THREE.Mesh(new THREE.TorusGeometry(2.1, 0.14, 10, 28), matB);
+        goldRing.position.y = 4.2;
+        const jewel = new THREE.Mesh(new THREE.OctahedronGeometry(0.95, 0), matC);
+        jewel.position.y = 4.2;
+        holder.add(col, goldRing, jewel);
+        break;
+      }
+      case 'cyberdrift': {
+        // Dual tilted neon drift rings & synthwave portal spire
+        matA.color.setHex(0x1e1b4b);
+        matB.color.setHex(0xf472b6);
+        matC.color.setHex(0x38bdf8);
+        constring1 = new THREE.Mesh(new THREE.TorusGeometry(2.8, 0.14, 10, 32), matB);
+        constring1.rotation.set(0.4, 0.5, 0);
+        constring2 = new THREE.Mesh(new THREE.TorusGeometry(2.1, 0.12, 10, 32), matC);
+        constring2.rotation.set(-0.4, -0.3, 0);
+        const spire = new THREE.Mesh(new THREE.ConeGeometry(1.4, 7, 4), matA);
+        spire.position.y = -3.2;
+        holder.add(constring1, constring2, spire);
+        break;
+      }
+      case 'angelic': {
+        // Pearl temple spire + concentric golden halos
+        matA.color.setHex(0xffffff);
+        matB.color.setHex(0xfde047);
+        const spire = new THREE.Mesh(new THREE.ConeGeometry(1.2, 8.5, 12), matA);
+        const halo1 = new THREE.Mesh(new THREE.TorusGeometry(1.8, 0.1, 10, 32), matB);
+        halo1.rotation.x = Math.PI / 2;
+        halo1.position.y = 3.2;
+        const halo2 = new THREE.Mesh(new THREE.TorusGeometry(2.5, 0.08, 10, 32), matB);
+        halo2.rotation.x = Math.PI / 2;
+        halo2.position.y = 2.4;
+        holder.add(spire, halo1, halo2);
+        break;
+      }
+      case 'lagoon': {
+        // Sandy atoll island + tropical palm tree + pastel beach parasol
+        matA.color.setHex(0xfde68a);
+        matB.color.setHex(0x4ade80);
+        matC.color.setHex(0xfb7185);
+        const atoll = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 3.2, 1.2, 12), matA);
+        const trunk = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.22, 0.35, 4.2, 8),
+          new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.9 })
+        );
+        trunk.position.set(-0.6, 2.2, 0);
+        const crown = new THREE.Mesh(new THREE.ConeGeometry(1.8, 1.5, 7), matB);
+        crown.position.set(-0.6, 4.3, 0);
+        const parasol = new THREE.Mesh(new THREE.ConeGeometry(1.3, 0.9, 8), matC);
+        parasol.position.set(1.0, 1.8, 0.4);
+        holder.add(atoll, trunk, crown, parasol);
+        break;
+      }
+      case 'lofi': {
+        // Oversized steaming coffee mug with saucer & vinyl turntable platter
+        matA.color.setHex(0xfef3c7);
+        matB.color.setHex(0x78350f);
+        matC.color.setHex(0xf472b6);
+        const saucer = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.0, 0.35, 18), matA);
+        const mug = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.25, 2.8, 18), matC);
+        mug.position.y = 1.5;
+        const steam = new THREE.Mesh(new THREE.TorusGeometry(0.65, 0.12, 8, 20), matA);
+        steam.position.y = 3.8;
+        holder.add(saucer, mug, steam);
+        break;
+      }
+      case 'gothicbalcony': {
+        // Pointed lancet arch + stained-glass rose window
+        matA.color.setHex(0x94a3b8);
+        matB.color.setHex(0xc084fc);
+        matC.color.setHex(0xf472b6);
+        const colL = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.65, 7, 8), matA);
+        colL.position.x = -1.6;
+        const colR = colL.clone();
+        colR.position.x = 1.6;
+        const rose = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.22, 10, 16), matB);
+        rose.position.y = 3.6;
+        const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.85, 0), matC);
+        core.position.y = 3.6;
+        holder.add(colL, colR, rose, core);
+        break;
+      }
+      case 'gothiccastle': {
+        // Crenelated castle turret + glowing torch brazier
+        matA.color.setHex(0x64748b);
+        matB.color.setHex(0xf97316);
+        const tower = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.8, 7.5, 10), matA);
+        const battlement = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.9, 0.9, 8), matA);
+        battlement.position.y = 3.8;
+        const flame = new THREE.Mesh(new THREE.ConeGeometry(0.85, 1.8, 8), matB);
+        flame.position.y = 5.1;
+        holder.add(tower, battlement, flame);
+        break;
+      }
+      case 'forest': {
+        // Multi-tiered pine trees + mossy boulder + floating firefly orb
+        matA.color.setHex(0x22c55e);
+        matB.color.setHex(0x15803d);
+        matC.color.setHex(0xfef08a);
+        const tier1 = new THREE.Mesh(new THREE.ConeGeometry(2.4, 3.2, 7), matB);
+        tier1.position.y = 1.0;
+        const tier2 = new THREE.Mesh(new THREE.ConeGeometry(1.9, 2.8, 7), matA);
+        tier2.position.y = 2.8;
+        const tier3 = new THREE.Mesh(new THREE.ConeGeometry(1.3, 2.2, 7), matA);
+        tier3.position.y = 4.3;
+        const firefly = new THREE.Mesh(new THREE.SphereGeometry(0.38, 10, 10), matC);
+        firefly.position.set(1.2, 5.5, 0.5);
+        holder.add(tier1, tier2, tier3, firefly);
+        break;
+      }
+      case 'cyberterrace': {
+        // Metropolis skyscraper + neon rooftop railing
+        matA.color.setHex(0x312e81);
+        matB.color.setHex(0x22d3ee);
+        matC.color.setHex(0xe879f9);
+        const building = new THREE.Mesh(new THREE.BoxGeometry(2.8, 9.5, 2.8), matA);
+        const neonTop = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.35, 3.1), matB);
+        neonTop.position.y = 4.8;
+        const beacon = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2.2, 6), matC);
+        beacon.position.y = 6.0;
+        holder.add(building, neonTop, beacon);
+        break;
+      }
+      case 'desert': {
+        // Ancient sandstone pyramid + canyon mesa + cactus
+        matA.color.setHex(0xf59e0b);
+        matB.color.setHex(0xd97706);
+        matC.color.setHex(0x22c55e);
+        const pyramid = new THREE.Mesh(new THREE.ConeGeometry(2.9, 4.8, 4), matA);
+        pyramid.rotation.y = Math.PI / 4;
+        const cactus = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 2.8, 8), matC);
+        cactus.position.set(2.1, 1.2, 0.6);
+        holder.add(pyramid, cactus);
+        break;
+      }
+      case 'reef': {
+        // Underwater coral cluster + rising bubble orbs
+        matA.color.setHex(0xf472b6);
+        matB.color.setHex(0x2dd4bf);
+        matC.color.setHex(0xe0f2fe);
+        const coral1 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.25, 4.5, 8), matA);
+        coral1.rotation.z = 0.25;
+        const coral2 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.2, 3.8, 8), matB);
+        coral2.rotation.z = -0.3;
+        coral2.position.x = 0.9;
+        const bubble = new THREE.Mesh(new THREE.SphereGeometry(0.55, 14, 14), matC);
+        bubble.position.set(0.3, 4.6, 0);
+        holder.add(coral1, coral2, bubble);
+        break;
+      }
+      default: {
+        // Alpine Meadows: Snow-capped mountain peak & rolling green hill
+        matA.color.setHex(0x86efac);
+        matB.color.setHex(0xffffff);
+        const mountain = new THREE.Mesh(new THREE.ConeGeometry(2.8, 6.2, 7), matA);
+        const snowCap = new THREE.Mesh(new THREE.ConeGeometry(1.45, 2.4, 7), matB);
+        snowCap.position.y = 1.95;
+        holder.add(mountain, snowCap);
+        break;
+      }
+    }
+
+    const zSide = index % 2 === 0 ? -8.5 - Math.random() * 6 : 7.5 + Math.random() * 6;
+    holder.position.set(-22 + index * 9, -6.2 - Math.random() * 1.4, zSide);
+    return holder;
   }
 
+  function rebuildBiomeScenery() {
+    while (biomeSceneryGroup.children.length > 0) {
+      biomeSceneryGroup.remove(biomeSceneryGroup.children[0]);
+    }
+    biomeProps = [];
+    for (let i = 0; i < 10; i++) {
+      const prop = createBiomePropMesh(state.bgBiome, i);
+      biomeSceneryGroup.add(prop);
+      biomeProps.push(prop);
+    }
+  }
+
+  // Main World Bird & Wing Pivots
   const birdGroup = new THREE.Group();
   birdGroup.position.set(-2.5, 0, 0);
   scene.add(birdGroup);
@@ -668,14 +1031,20 @@
     previewWings = populateBirdMeshGroup(previewBirdGroup);
   }
 
-  // Path Projection
+  // Forward Trajectory Path Projection
   const projectionGroup = new THREE.Group();
   scene.add(projectionGroup);
   const PROJECTION_COUNT = 16;
   const projectionDots = [];
   const dotGeo = new THREE.SphereGeometry(0.11, 12, 12);
+
   for (let i = 0; i < PROJECTION_COUNT; i++) {
-    const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.88 - (i/PROJECTION_COUNT)*0.74 }));
+    const dotMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.88 - (i / PROJECTION_COUNT) * 0.74
+    });
+    const dot = new THREE.Mesh(dotGeo, dotMat);
     projectionGroup.add(dot);
     projectionDots.push(dot);
   }
@@ -691,7 +1060,7 @@
   }
 
   /* =========================================================
-     CAMERA MODES
+     CAMERA PERSPECTIVE (CLASSIC 3D <-> BIRD'S-EYE POV)
      ========================================================= */
   function setCameraMode(mode, playAudio = true) {
     const changed = state.cameraMode !== mode;
@@ -699,7 +1068,10 @@
     const isPov = state.cameraMode === 'pov';
     dom.hudCamMode.textContent = isPov ? 'Bird POV' : 'Classic 3D';
     dom.camBtnLabel.textContent = isPov ? 'Classic (C)' : 'POV (C)';
-    if (changed && playAudio) SoundFX.cameraSwitch(isPov);
+
+    if (changed && playAudio) {
+      SoundFX.cameraSwitch(isPov);
+    }
 
     const camContainer = document.getElementById('cam-selector');
     if (camContainer) {
@@ -714,24 +1086,32 @@
   }
 
   function updateCameraRig(dt) {
-    let targetPos, targetLook;
+    let targetPos;
+    let targetLook;
+
     if (state.cameraMode === 'pov' && (state.phase === 'playing' || state.phase === 'countdown')) {
       targetPos = new THREE.Vector3(birdGroup.position.x + 0.6, state.birdY + 0.24, 0);
-      targetLook = new THREE.Vector3(birdGroup.position.x + 16, state.birdY + 0.2 + state.birdVy * 0.25, 0);
+      targetLook = new THREE.Vector3(
+        birdGroup.position.x + 16,
+        state.birdY + 0.2 + state.birdVy * 0.25,
+        0
+      );
     } else {
       const zDist = window.innerWidth < 650 ? 15.5 : 13.5;
       targetPos = new THREE.Vector3(-2, 0.8, zDist);
       targetLook = new THREE.Vector3(2.2, 0, 0);
     }
+
     const lerpSpeed = Math.min(1, dt * 9);
     camCurrentPos.lerp(targetPos, lerpSpeed);
     camCurrentLook.lerp(targetLook, lerpSpeed);
+
     camera.position.copy(camCurrentPos);
     camera.lookAt(camCurrentLook);
   }
 
   /* =========================================================
-     OBSTACLES & DIAMONDS VAULT SYSTEM
+     RANDOMIZED OBSTACLES & COLLECTIBLE VAULT DIAMONDS
      ========================================================= */
   const obstacleGroup = new THREE.Group();
   scene.add(obstacleGroup);
@@ -741,25 +1121,19 @@
   scene.add(diamondGroup);
   let diamonds = [];
 
-  const diamondGeo = new THREE.OctahedronGeometry(0.32, 0);
-  const diamondMat = new THREE.MeshStandardMaterial({ color: 0x67e8f9, emissive: 0x38bdf8, emissiveIntensity: 0.6, roughness: 0.2 });
+  const diamondGeo = new THREE.OctahedronGeometry(0.36, 0);
+  const diamondMat = new THREE.MeshStandardMaterial({
+    color: 0x67e8f9,
+    emissive: 0x38bdf8,
+    emissiveIntensity: 0.45,
+    roughness: 0.25
+  });
 
-  const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 });
-
-  const BIOME_DETAILS = {
-    meadow: { name: 'Alpine Meadows', colors: [0xa5b4fc, 0x93c5fd, 0x6ee7b7] },
-    sanctum: { name: 'Royal Sanctum', colors: [0xfde047, 0xfcd34d, 0xfef08a] },
-    cyberdrift: { name: 'Cyberpunk Drift', colors: [0xf0abfc, 0x38bdf8, 0xe879f9] },
-    angelic: { name: 'Angelic Cloud', colors: [0xf8fafc, 0xe2e8f0, 0xfef08a] },
-    lagoon: { name: 'Pastel Lagoon', colors: [0x38bdf8, 0x2dd4bf, 0x7dd3fc] },
-    lofi: { name: 'Lo-Fi Cafe', colors: [0xd97706, 0xb45309, 0xf59e0b] },
-    gothicbalcony: { name: 'Gothic Balcony', colors: [0x475569, 0x64748b, 0x94a3b8] },
-    gothiccastle: { name: 'Gothic Castle', colors: [0x334155, 0x475569, 0xef4444] },
-    forest: { name: 'Enchanted Forest', colors: [0x15803d, 0x16a34a, 0x22c55e] },
-    cyberterrace: { name: 'Cyber Terrace', colors: [0x0f172a, 0xec4899, 0x8b5cf6] },
-    desert: { name: 'Sandstone Desert', colors: [0xd97706, 0xb45309, 0xf87171] },
-    reef: { name: 'Abyssal Reef', colors: [0x0284c7, 0x0ea5e9, 0x14b8a6] }
-  };
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.55
+  });
 
   function clearObstaclesAndDiamonds() {
     obstacles.forEach((ob) => obstacleGroup.remove(ob.group));
@@ -783,25 +1157,61 @@
     const gapY = customData?.gapY ?? pickRandomGapY();
     const posX = customData?.x ?? 18 + Math.random() * 1.5;
 
-    const biomeData = BIOME_DETAILS[state.bgBiome] || BIOME_DETAILS.meadow;
-    const colorHex = customData?.colorHex ?? biomeData.colors[Math.floor(Math.random() * biomeData.colors.length)];
+    const styles = ['cylinder', 'hexCrystal', 'ringTotem'];
+    const style = customData?.style ?? styles[Math.floor(Math.random() * styles.length)];
+
+    const bConf = BIOME_CONFIG[state.bgBiome] || BIOME_CONFIG.meadow;
+    const colorHex =
+      customData?.colorHex ?? bConf.pillars[Math.floor(Math.random() * bConf.pillars.length)];
+
+    const bobAmp = customData?.bobAmp ?? (Math.random() < 0.35 ? 0.35 + Math.random() * 0.45 : 0);
+    const bobSpeed = customData?.bobSpeed ?? 1.4 + Math.random() * 1.2;
+    const bobPhase = customData?.bobPhase ?? Math.random() * Math.PI * 2;
+
+    const mat = new THREE.MeshStandardMaterial({
+      color: colorHex,
+      roughness: 0.86,
+      metalness: 0.0,
+      flatShading: style === 'hexCrystal'
+    });
 
     const pairGroup = new THREE.Group();
     pairGroup.position.x = posX;
 
     const pipeHeight = 14;
-    const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.85, metalness: 0.05 });
+    const radialSegments = style === 'hexCrystal' ? 6 : 24;
+    const radius = style === 'hexCrystal' ? 0.84 : 0.76;
 
-    const topMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 0.78, pipeHeight, 20), mat);
+    const geo = new THREE.CylinderGeometry(radius, radius, pipeHeight, radialSegments);
+    const rimGeo = new THREE.CylinderGeometry(radius * 1.2, radius * 1.2, 0.46, radialSegments);
+
+    const topMesh = new THREE.Mesh(geo, mat);
     topMesh.position.y = gapY + gapSize / 2 + pipeHeight / 2;
-    const bottomMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 0.78, pipeHeight, 20), mat);
+    const topRim = new THREE.Mesh(rimGeo, mat);
+    topRim.position.y = gapY + gapSize / 2 + 0.23;
+
+    const bottomMesh = new THREE.Mesh(geo, mat);
     bottomMesh.position.y = gapY - gapSize / 2 - pipeHeight / 2;
+    const bottomRim = new THREE.Mesh(rimGeo, mat);
+    bottomRim.position.y = gapY - gapSize / 2 - 0.23;
+
+    pairGroup.add(topMesh, topRim, bottomMesh, bottomRim);
+
+    if (style === 'ringTotem') {
+      const collarGeo = new THREE.TorusGeometry(radius * 1.15, 0.12, 10, 24);
+      const topCollar = new THREE.Mesh(collarGeo, mat);
+      topCollar.rotation.x = Math.PI / 2;
+      topCollar.position.y = gapY + gapSize / 2 + 1.4;
+      const botCollar = topCollar.clone();
+      botCollar.position.y = gapY - gapSize / 2 - 1.4;
+      pairGroup.add(topCollar, botCollar);
+    }
 
     const portalRing = new THREE.Mesh(new THREE.TorusGeometry(gapSize * 0.44, 0.06, 12, 32), ringMat);
     portalRing.rotation.y = Math.PI / 2;
     portalRing.position.y = gapY;
+    pairGroup.add(portalRing);
 
-    pairGroup.add(topMesh, bottomMesh, portalRing);
     obstacleGroup.add(pairGroup);
 
     obstacles.push({
@@ -809,76 +1219,86 @@
       baseGapY: gapY,
       gapY,
       gapSize,
+      style,
+      colorHex,
+      bobAmp,
+      bobSpeed,
+      bobPhase,
       passed: customData ? Boolean(customData.passed) : false
     });
 
-    // Spawn Collectible Diamond in the middle of the gap or nearby
-    if (Math.random() < 0.75) {
+    // Spawn collectible diamond inside or between gaps
+    if (!customData && Math.random() < 0.75) {
       const dMesh = new THREE.Mesh(diamondGeo, diamondMat);
-      dMesh.position.set(posX, gapY, 0);
+      dMesh.position.set(posX, gapY + (Math.random() - 0.5) * 0.9, 0);
       diamondGroup.add(dMesh);
-      diamonds.push({ mesh: dMesh, collected: false });
+      diamonds.push({
+        mesh: dMesh,
+        baseY: dMesh.position.y,
+        collected: false
+      });
     }
   }
 
   /* =========================================================
-     SKY BIOMES & CELESTIAL MODES
+     SKY BIOME LIGHTING & CELESTIAL CYCLE
      ========================================================= */
-  const BIOME_PALETTES = {
-    meadow: { daySky: 0xcffafe, nightSky: 0x161930, island: 0x86efac, cap: 0xbbf7d0 },
-    sanctum: { daySky: 0xfef9c3, nightSky: 0x1e1b2e, island: 0xfde047, cap: 0xfef08a },
-    cyberdrift: { daySky: 0xfce7f3, nightSky: 0x0f0c1b, island: 0xf472b6, cap: 0xfbcfe8 },
-    angelic: { daySky: 0xf8fafc, nightSky: 0x090d16, island: 0xe2e8f0, cap: 0xffffff },
-    lagoon: { daySky: 0xe0f2fe, nightSky: 0x082f49, island: 0x38bdf8, cap: 0x7dd3fc },
-    lofi: { daySky: 0xfef3c7, nightSky: 0x1c1917, island: 0xd97706, cap: 0xf59e0b },
-    gothicbalcony: { daySky: 0xe2e8f0, nightSky: 0x0f172a, island: 0x64748b, cap: 0x94a3b8 },
-    gothiccastle: { daySky: 0xcbd5e1, nightSky: 0x090d16, island: 0x475569, cap: 0x64748b },
-    forest: { daySky: 0xdcfce7, nightSky: 0x052e16, island: 0x22c55e, cap: 0x4ade80 },
-    cyberterrace: { daySky: 0xfbcfe8, nightSky: 0x030712, island: 0xec4899, cap: 0xf472b6 },
-    desert: { daySky: 0xffedd5, nightSky: 0x1c1917, island: 0xf97316, cap: 0xfdb_a74 },
-    reef: { daySky: 0xe0f2fe, nightSky: 0x042f2e, island: 0x06b6d4, cap: 0x22d3ee }
-  };
-
   function syncCelestialClockToMode() {
-    if (state.skyMode === 'fixed-day') state.celestialTime = 0.0;
-    else if (state.skyMode === 'fixed-night') state.celestialTime = 0.5;
-    else state.celestialTime = state.initialScene === 'night' ? 0.5 : 0.0;
+    if (state.skyMode === 'fixed-day') {
+      state.celestialTime = 0.0;
+    } else if (state.skyMode === 'fixed-night') {
+      state.celestialTime = 0.5;
+    } else {
+      state.celestialTime = state.initialScene === 'night' ? 0.5 : 0.0;
+    }
   }
 
   function updateBiomeAndCelestialCycle(dt) {
-    const biomeKey = state.bgBiome;
-    const palette = BIOME_PALETTES[biomeKey] || BIOME_PALETTES.meadow;
-    dom.hudBiomeName.textContent = BIOME_DETAILS[biomeKey]?.name || 'Alpine Meadows';
+    const bConf = BIOME_CONFIG[state.bgBiome] || BIOME_CONFIG.meadow;
+    dom.hudBiomeName.textContent = bConf.name;
 
-    islandMat.color.setHex(palette.island);
-    capMat.color.setHex(palette.cap);
-
-    if (state.skyMode === 'fixed-day') state.celestialTime = 0.0;
-    else if (state.skyMode === 'fixed-night') state.celestialTime = 0.5;
-    else {
-      state.celestialTime = (state.celestialTime + dt * state.baseCycleSpeed * state.cycleRateMultiplier) % 1.0;
+    if (state.skyMode === 'fixed-day') {
+      state.celestialTime = 0.0;
+    } else if (state.skyMode === 'fixed-night') {
+      state.celestialTime = 0.5;
+    } else {
+      state.celestialTime =
+        (state.celestialTime + dt * state.baseCycleSpeed * state.cycleRateMultiplier) % 1.0;
       if (state.celestialTime < 0) state.celestialTime += 1.0;
     }
 
     const nightFactor = 0.5 - 0.5 * Math.cos(state.celestialTime * Math.PI * 2);
-    const dayCol = new THREE.Color(palette.daySky);
-    const nightCol = new THREE.Color(palette.nightSky);
+    const dayCol = new THREE.Color(bConf.daySky);
+    const nightCol = new THREE.Color(bConf.nightSky);
     const currentSky = dayCol.clone().lerp(nightCol, nightFactor);
 
     renderer.setClearColor(currentSky);
     scene.fog.color.copy(currentSky);
 
-    hemiLight.intensity = 0.72 - nightFactor * 0.28;
+    const cloudDayCol = new THREE.Color(bConf.cloudDay);
+    const cloudNightCol = new THREE.Color(bConf.cloudNight);
+    cloudMat.color.copy(cloudDayCol.lerp(cloudNightCol, nightFactor));
+
+    hemiLight.intensity = 0.74 - nightFactor * 0.28;
     dirLight.intensity = 0.68 - nightFactor * 0.35;
     starMat.opacity = Math.max(0, (nightFactor - 0.32) * 1.45);
 
     const angle = state.celestialTime * Math.PI * 2 + Math.PI / 2;
-    sunMesh.position.set(Math.cos(angle) * 22, Math.sin(angle) * 12, -19);
-    moonMesh.position.set(Math.cos(angle + Math.PI) * 22, Math.sin(angle + Math.PI) * 12, -19);
+    const orbitRadius = 22;
+    sunMesh.position.set(Math.cos(angle) * orbitRadius, Math.sin(angle) * 12, -19);
+    moonMesh.position.set(Math.cos(angle + Math.PI) * orbitRadius, Math.sin(angle + Math.PI) * 12, -19);
+
+    if (state.skyMode === 'fixed-day') {
+      dom.hudSkyPhase.textContent = 'Fixed Day';
+    } else if (state.skyMode === 'fixed-night') {
+      dom.hudSkyPhase.textContent = 'Fixed Night';
+    } else {
+      dom.hudSkyPhase.textContent = nightFactor > 0.5 ? 'Dynamic (Night)' : 'Dynamic (Day)';
+    }
   }
 
   /* =========================================================
-     GAME FLOW & REVIVE VAULT SYSTEM
+     3-SECOND COUNTDOWN, RESPAWN & GAME FLOW
      ========================================================= */
   let countdownInterval = null;
 
@@ -945,13 +1365,26 @@
   }
 
   function reviveFlight() {
-    if (state.vaultDiamonds < 5) return;
-    state.vaultDiamonds -= 5;
+    if (state.vaultDiamonds < REVIVE_COST) return;
+
+    state.vaultDiamonds -= REVIVE_COST;
     localStorage.setItem(STORAGE_KEYS.VAULT_DIAMONDS, String(state.vaultDiamonds));
     dom.vaultDiamondCount.textContent = state.vaultDiamonds;
 
+    // Clear nearby obstacles so the bird respawns safely without instant re-collision
+    const birdX = birdGroup.position.x;
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+      if (obstacles[i].group.position.x < birdX + 9.5) {
+        obstacleGroup.remove(obstacles[i].group);
+        obstacles.splice(i, 1);
+      }
+    }
+
     state.birdY = 0.5;
-    state.birdVy = 2.0;
+    state.birdVy = 2.5;
+    birdGroup.position.y = state.birdY;
+    birdGroup.rotation.z = 0;
+
     showActiveScreen(null);
     dom.hudContainer.classList.remove('hidden-hud');
     dom.deviceControls.classList.remove('hidden-hud');
@@ -959,11 +1392,59 @@
     runThreeSecondCountdown();
   }
 
+  function resumeSavedFlight() {
+    const raw = localStorage.getItem(STORAGE_KEYS.SAVED_GAME);
+    if (!raw) return initNewFlight();
+
+    try {
+      const saved = JSON.parse(raw);
+      clearObstaclesAndDiamonds();
+      state.score = saved.score || 0;
+      state.elapsedTime = saved.elapsedTime || 0;
+      state.birdY = saved.birdY ?? 0.5;
+      state.birdVy = saved.birdVy ?? 0;
+      state.forwardSpeedMultiplier = saved.forwardSpeedMultiplier || 1.0;
+      state.cycleRateMultiplier = saved.cycleRateMultiplier || 1.0;
+      state.celestialTime = saved.celestialTime || 0;
+      if (saved.bgBiome) {
+        state.bgBiome = saved.bgBiome;
+        dom.biomeSelect.value = state.bgBiome;
+        rebuildBiomeScenery();
+      }
+      if (saved.skyMode) state.skyMode = saved.skyMode;
+      if (saved.cameraMode) setCameraMode(saved.cameraMode, false);
+      state.obstacleSpawnDelay = 2.0;
+      state.timeSinceNextPipe = 0;
+      state.nextPipeInterval = 1.4 + Math.random() * 0.5;
+
+      if (Array.isArray(saved.obstacles)) {
+        saved.obstacles.forEach((ob) => spawnObstacle(ob));
+      }
+
+      localStorage.removeItem(STORAGE_KEYS.SAVED_GAME);
+      checkSavedSessionButton();
+
+      showActiveScreen(null);
+      dom.hudContainer.classList.remove('hidden-hud');
+      dom.deviceControls.classList.remove('hidden-hud');
+      dom.btnPause.classList.remove('hidden-btn');
+      updateHudDisplay();
+      runThreeSecondCountdown();
+    } catch {
+      initNewFlight();
+    }
+  }
+
   function saveProgressAndLeaveHome() {
     const serializedObstacles = obstacles.map((ob) => ({
       x: ob.group.position.x,
       gapY: ob.baseGapY,
       gapSize: ob.gapSize,
+      style: ob.style,
+      colorHex: ob.colorHex,
+      bobAmp: ob.bobAmp,
+      bobSpeed: ob.bobSpeed,
+      bobPhase: ob.bobPhase,
       passed: ob.passed
     }));
 
@@ -975,6 +1456,7 @@
       forwardSpeedMultiplier: state.forwardSpeedMultiplier,
       cycleRateMultiplier: state.cycleRateMultiplier,
       celestialTime: state.celestialTime,
+      bgBiome: state.bgBiome,
       skyMode: state.skyMode,
       cameraMode: state.cameraMode,
       obstacles: serializedObstacles
@@ -1011,9 +1493,18 @@
     dom.finalScore.textContent = state.score;
     dom.finalTime.textContent = `${state.elapsedTime.toFixed(1)}s`;
     dom.finalBestScore.textContent = state.bestScore;
-    dom.finalBestTime.textContent = `${state.bestTime.toFixed(1)}s`;
+    dom.finalVaultDiamonds.textContent = `💎 ${state.vaultDiamonds}`;
 
-    dom.btnRevive.classList.toggle('hidden-btn', state.vaultDiamonds < 5);
+    // Always-visible Respawn button with clear status
+    dom.btnRevive.classList.remove('hidden-btn');
+    if (state.vaultDiamonds >= REVIVE_COST) {
+      dom.btnRevive.disabled = false;
+      dom.btnRevive.textContent = `💎 Respawn Here (${REVIVE_COST} Diamond • Vault: ${state.vaultDiamonds})`;
+    } else {
+      dom.btnRevive.disabled = true;
+      dom.btnRevive.textContent = `💎 Respawn Locked (Need ${REVIVE_COST} Diamond • Vault: 0)`;
+    }
+
     dom.btnPause.classList.add('hidden-btn');
     showActiveScreen(dom.screenGameover);
   }
@@ -1036,11 +1527,12 @@
     dom.hudBestScore.textContent = state.bestScore;
     dom.hudBestTime.textContent = `${state.bestTime.toFixed(1)}s`;
     dom.hudBirdSpeed.textContent = `${state.forwardSpeedMultiplier.toFixed(1)}x`;
-    dom.hudCycleSpeed.textContent = state.skyMode === 'dynamic' ? `${state.cycleRateMultiplier.toFixed(1)}x` : 'Locked';
+    dom.hudCycleSpeed.textContent =
+      state.skyMode === 'dynamic' ? `${state.cycleRateMultiplier.toFixed(1)}x` : 'Locked';
   }
 
   /* =========================================================
-     CONTROLS
+     CONTROLS (ARROW UP / TAP, W/S CYCLE, A/D SPEED, C CAMERA)
      ========================================================= */
   function flapBird() {
     if (state.phase !== 'playing') return;
@@ -1085,13 +1577,24 @@
   bindTouchAndClick(document.getElementById('btn-cycle-fast'), () => adjustCycleRate(0.4));
   bindTouchAndClick(document.getElementById('btn-cycle-slow'), () => adjustCycleRate(-0.4));
 
-  dom.canvas.addEventListener('touchstart', (e) => {
+  dom.canvas.addEventListener(
+    'touchstart',
+    (e) => {
+      SoundFX.initContext();
+      if (state.phase === 'playing') {
+        if (e.cancelable) e.preventDefault();
+        flapBird();
+      }
+    },
+    { passive: false }
+  );
+
+  dom.canvas.addEventListener('mousedown', () => {
     SoundFX.initContext();
-    if (state.phase === 'playing') {
-      if (e.cancelable) e.preventDefault();
+    if (state.phase === 'playing' && state.device === 'handheld') {
       flapBird();
     }
-  }, { passive: false });
+  });
 
   /* =========================================================
      STUDIO & UI WIRING
@@ -1112,6 +1615,7 @@
 
   dom.biomeSelect.addEventListener('change', (e) => {
     state.bgBiome = e.target.value;
+    rebuildBiomeScenery();
     updateBiomeAndCelestialCycle(0);
   });
 
@@ -1163,11 +1667,7 @@
   });
 
   bindTouchAndClick(dom.btnStartGame, initNewFlight);
-  bindTouchAndClick(dom.btnResumeSaved, () => {
-    const raw = localStorage.getItem(STORAGE_KEYS.SAVED_GAME);
-    if (raw) resumeSavedFlight();
-    else initNewFlight();
-  });
+  bindTouchAndClick(dom.btnResumeSaved, resumeSavedFlight);
 
   function pauseFlight() {
     if (state.phase !== 'playing') return;
@@ -1176,6 +1676,7 @@
   }
 
   bindTouchAndClick(dom.btnPause, pauseFlight);
+
   bindTouchAndClick(dom.btnResumePlay, () => {
     showActiveScreen(null);
     runThreeSecondCountdown();
@@ -1204,7 +1705,11 @@
   window.addEventListener('resize', handleResize);
   handleResize();
 
+  /* =========================================================
+     MAIN GAME & LIVE 3D PREVIEW ANIMATION LOOP
+     ========================================================= */
   rebuildAllBirdModels();
+  rebuildBiomeScenery();
   updateBiomeAndCelestialCycle(0);
   updateHudDisplay();
 
@@ -1225,8 +1730,8 @@
       previewWings.rightPivot.rotation.x = -Math.sin(now * 0.012) * 0.5;
     }
 
-    if (state.autoRotatePreview) {
-      previewBirdGroup.rotation.y = now * 0.0012;
+    if (state.autoRotatePreview && !isDraggingPreview) {
+      previewBirdGroup.rotation.y += dt * 1.1;
     }
     previewBirdGroup.position.y = Math.sin(now * 0.0035) * 0.12;
     previewRenderer.render(previewScene, previewCamera);
@@ -1246,12 +1751,15 @@
       birdGroup.position.y = state.birdY;
       birdGroup.rotation.z = Math.max(-0.6, Math.min(0.55, state.birdVy * 0.06));
 
-      if (state.birdY < -6.2 || state.birdY > 6.5) triggerGameOver();
+      if (state.birdY < -6.2 || state.birdY > 6.5) {
+        triggerGameOver();
+      }
 
       const forwardVel = state.baseForwardSpeed * state.forwardSpeedMultiplier;
-      islandMeshes.forEach((isl) => {
-        isl.position.x -= forwardVel * 0.35 * dt;
-        if (isl.position.x < -28) isl.position.x = 54;
+
+      biomeProps.forEach((prop) => {
+        prop.position.x -= forwardVel * 0.38 * dt;
+        if (prop.position.x < -30) prop.position.x = 58;
       });
 
       if (state.obstacleSpawnDelay > 0) {
@@ -1271,6 +1779,12 @@
       for (let i = obstacles.length - 1; i >= 0; i--) {
         const ob = obstacles[i];
         ob.group.position.x -= forwardVel * dt;
+
+        if (ob.bobAmp > 0) {
+          const offset = Math.sin(state.elapsedTime * ob.bobSpeed + ob.bobPhase) * ob.bobAmp;
+          ob.group.position.y = offset;
+          ob.gapY = ob.baseGapY + offset;
+        }
 
         if (!ob.passed && ob.group.position.x < birdX) {
           ob.passed = true;
@@ -1295,15 +1809,16 @@
         }
       }
 
-      // Check Diamond Collisions
+      // Collect Vault Diamonds
       for (let i = diamonds.length - 1; i >= 0; i--) {
         const d = diamonds[i];
         d.mesh.position.x -= forwardVel * dt;
-        d.mesh.rotation.y += dt * 2.5;
+        d.mesh.rotation.y += dt * 2.8;
+        d.mesh.position.y = d.baseY + Math.sin(now * 0.005 + i) * 0.22;
 
         if (!d.collected) {
           const dist = d.mesh.position.distanceTo(birdGroup.position);
-          if (dist < 0.85) {
+          if (dist < 0.92) {
             d.collected = true;
             diamondGroup.remove(d.mesh);
             state.vaultDiamonds += 1;

@@ -1,47 +1,43 @@
 /* =========================================================
-   PROPORTIONAL VIEWPORT SCALING ENGINE
-   Larger screen = Larger UI | Smaller screen = Smaller UI
-   Guarantees 100vh >= 54rem so HUD & Bottom Controls NEVER overlap
+   PROPORTIONAL SCREEN-SIZE SCALING (LARGER SCREEN = LARGER UI)
    ========================================================= */
 html {
-  font-size: clamp(8px, min(1.06vw, 1.82vh), 22px);
+  font-size: clamp(10px, min(1.35vw, 2.15vh), 26px);
 }
 
 :root {
-  /* Master Equidistant Spacing Rhythm */
-  --ui-gap: 0.85rem;
-  --pad-card: 0.9rem;
-  --pad-inner: 0.65rem;
-  --card-radius: 1.35rem;
-  --inner-radius: 0.9rem;
+  --ui-gap: 0.95rem;
+  --pad-card: 1.05rem;
+  --pad-inner: 0.75rem;
+  --card-radius: 1.45rem;
+  --inner-radius: 0.95rem;
 
-  /* High-Contrast Pastel Light Palette (Zero Gradients) */
-  --surface-bg: rgba(252, 248, 255, 0.82);
-  --surface-border: rgba(31, 25, 46, 0.16);
-  --pill-bg: rgba(238, 230, 252, 0.92);
-  --preview-bg: #e3f1ff;
-  --text-main: #181326;
-  --text-muted: #4a4163;
+  /* Glassmorphic Coloured Frosted Palettes */
+  --surface-bg: rgba(250, 246, 255, 0.84);
+  --surface-border: rgba(184, 169, 255, 0.35);
+  --pill-bg: rgba(234, 225, 255, 0.92);
+  --preview-bg: rgba(220, 238, 255, 0.85);
+  --text-main: #1d1730;
+  --text-muted: #534875;
   --accent-pastel: #ff94b2;
-  --accent-secondary: #b4a0ff;
+  --accent-secondary: #b8a9ff;
   --accent-mint: #7ce0b3;
-  --accent-text: #181326;
-  --shadow-clean: 0 0.8rem 2rem rgba(24, 19, 38, 0.12);
+  --accent-text: #1d1730;
+  --shadow-clean: 0 0.9rem 2.2rem rgba(29, 23, 48, 0.14);
 }
 
 [data-theme="dark"] {
-  /* High-Contrast Pastel Dark Palette (Zero Gradients) */
-  --surface-bg: rgba(26, 23, 41, 0.84);
-  --surface-border: rgba(235, 228, 255, 0.2);
-  --pill-bg: rgba(43, 38, 66, 0.94);
-  --preview-bg: #25213b;
-  --text-main: #f7f4ff;
-  --text-muted: #c2b8de;
+  --surface-bg: rgba(24, 21, 38, 0.88);
+  --surface-border: rgba(184, 169, 255, 0.22);
+  --pill-bg: rgba(46, 40, 74, 0.94);
+  --preview-bg: rgba(32, 28, 54, 0.85);
+  --text-main: #f8f5ff;
+  --text-muted: #c7bce6;
   --accent-pastel: #ffb3c8;
-  --accent-secondary: #c0b3ff;
+  --accent-secondary: #c4b8ff;
   --accent-mint: #8ef0c4;
   --accent-text: #161224;
-  --shadow-clean: 0 1rem 2.4rem rgba(6, 5, 14, 0.52);
+  --shadow-clean: 0 1rem 2.5rem rgba(6, 5, 14, 0.58);
 }
 
 * {
@@ -73,21 +69,19 @@ html, body {
   touch-action: none;
 }
 
-button {
+button, select {
   touch-action: manipulation;
   font-family: inherit;
 }
 
-/* =========================================================
-   FLAT PASTEL FROSTED GLASS & UPPER-LEFT PLAGUE TRANSITION
-   ========================================================= */
+/* Glassmorphic Coloured UI Containers */
 .ui-section {
   position: relative;
   overflow: hidden;
   background-color: var(--surface-bg);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1.5px solid var(--surface-border);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1.8px solid var(--surface-border);
   box-shadow: var(--shadow-clean);
   color: var(--text-main);
   border-radius: var(--card-radius);
@@ -104,19 +98,17 @@ button {
   z-index: 20;
   pointer-events: none;
   border-radius: inherit;
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
 }
 
-/* =========================================================
-   TOP NAVIGATION BAR (EQUIDISTANT PILLS)
-   ========================================================= */
+/* Top Navigation Bar */
 .top-bar {
   position: fixed;
   top: var(--ui-gap);
   left: var(--ui-gap);
   right: var(--ui-gap);
-  height: 2.75rem;
+  height: 3.2rem;
   z-index: 65;
   display: flex;
   justify-content: space-between;
@@ -126,31 +118,40 @@ button {
 }
 
 .brand-pill,
-.action-pill {
+.action-pill,
+.diamond-vault-badge {
   pointer-events: auto;
   border-radius: 999px;
-  height: 2.75rem;
+  height: 3.2rem;
   display: inline-flex;
   align-items: center;
 }
 
-.brand-inner {
+.brand-inner,
+.vault-inner {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0 1.05rem 0 0.55rem;
+  gap: 0.75rem;
+  padding: 0 1.2rem 0 0.65rem;
 }
 
 .brand-icon {
-  width: 1.8rem;
-  height: 1.8rem;
+  width: 2.05rem;
+  height: 2.05rem;
   flex-shrink: 0;
 }
 
 .brand-title {
   font-weight: 800;
-  font-size: 0.98rem;
+  font-size: 1.08rem;
   letter-spacing: -0.02em;
+}
+
+.vault-inner {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--accent-mint);
+  padding: 0 1.1rem;
 }
 
 .top-controls {
@@ -161,9 +162,9 @@ button {
 
 .action-pill {
   cursor: pointer;
-  padding: 0 1.15rem;
+  padding: 0 1.3rem;
   font-weight: 700;
-  font-size: 0.84rem;
+  font-size: 0.9rem;
   transition: transform 0.16s ease, background-color 0.2s ease;
 }
 
@@ -180,15 +181,13 @@ button {
   display: none !important;
 }
 
-/* =========================================================
-   EQUIDISTANT LEFT STACKING HUD (ZERO OVERLAP GUARANTEED)
-   ========================================================= */
+/* Equidistant HUD Stack (Handheld & Desktop Proportional Scaling) */
 .hud-stack {
   position: fixed;
-  top: calc(var(--ui-gap) * 2 + 2.75rem);
+  top: calc(var(--ui-gap) * 2 + 3.2rem);
   left: var(--ui-gap);
   z-index: 25;
-  width: 15.2rem;
+  width: 17.5rem;
   display: flex;
   flex-direction: column;
   pointer-events: none;
@@ -200,7 +199,7 @@ button {
 }
 
 .hud-slot {
-  max-height: 13rem;
+  max-height: 14.5rem;
   margin-bottom: var(--ui-gap);
   transition:
     max-height 0.46s cubic-bezier(0.22, 1, 0.36, 1),
@@ -225,7 +224,7 @@ button {
 .hud-card-inner {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.65rem;
 }
 
 .hud-header {
@@ -235,7 +234,7 @@ button {
 }
 
 .hud-tag {
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 800;
@@ -243,14 +242,14 @@ button {
 }
 
 .hud-hide-btn {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.7rem;
+  height: 1.7rem;
   border-radius: 50%;
-  border: 1.5px solid var(--surface-border);
+  border: 1.8px solid var(--surface-border);
   background-color: var(--pill-bg);
   color: var(--text-main);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 1;
   display: grid;
@@ -260,34 +259,34 @@ button {
 .hud-metrics {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.55rem;
+  gap: 0.65rem;
 }
 
 .metric-box {
   background-color: var(--pill-bg);
-  padding: 0.5rem 0.65rem;
+  padding: 0.55rem 0.75rem;
   border-radius: var(--inner-radius);
-  border: 1px solid var(--surface-border);
+  border: 1.5px solid var(--surface-border);
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
 }
 
 .metric-label {
-  font-size: 0.66rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: var(--text-muted);
 }
 
 .metric-val {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   font-weight: 800;
 }
 
 .dynamics-grid {
   display: flex;
   flex-direction: column;
-  gap: 0.42rem;
+  gap: 0.48rem;
 }
 
 .dyn-row {
@@ -295,7 +294,7 @@ button {
   justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.76rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
   font-weight: 600;
   white-space: nowrap;
@@ -306,9 +305,7 @@ button {
   font-weight: 800;
 }
 
-/* =========================================================
-   EQUIDISTANT ON-SCREEN DEVICE CONTROLS
-   ========================================================= */
+/* Enlarged Proportional On-Screen Touch Controls */
 .device-controls {
   position: fixed;
   bottom: var(--ui-gap);
@@ -325,46 +322,46 @@ button {
 
 .control-cluster {
   pointer-events: auto;
-  padding: 0.65rem;
+  padding: 0.75rem;
 }
 
 .cluster-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.55rem;
-  width: calc(15.2rem - 1.3rem);
+  gap: 0.65rem;
+  width: calc(17.5rem - 1.5rem);
 }
 
 .right-deck-layout {
   display: flex;
   align-items: stretch;
-  gap: 0.65rem;
+  gap: 0.75rem;
 }
 
 .ctrl-btn {
-  border: 1.5px solid var(--surface-border);
+  border: 1.8px solid var(--surface-border);
   background-color: var(--pill-bg);
   color: var(--text-main);
   border-radius: var(--inner-radius);
-  padding: 0.55rem 0.75rem;
+  padding: 0.7rem 0.85rem;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
+  gap: 0.25rem;
   touch-action: none;
   transition: transform 0.1s ease, background-color 0.2s ease;
 }
 
 .ctrl-btn strong {
-  font-size: 0.86rem;
+  font-size: 0.98rem;
   font-weight: 800;
   line-height: 1.1;
 }
 
 .ctrl-btn span {
-  font-size: 0.64rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: var(--text-muted);
   line-height: 1.1;
@@ -378,8 +375,8 @@ button {
 .cam-btn {
   background-color: var(--accent-secondary);
   color: var(--accent-text);
-  min-width: 5.2rem;
-  min-height: 4.5rem;
+  min-width: 6.2rem;
+  min-height: 5.4rem;
 }
 
 .cam-btn span {
@@ -387,14 +384,14 @@ button {
 }
 
 .jump-btn {
-  min-width: 7.2rem;
-  min-height: 4.5rem;
+  min-width: 8.8rem;
+  min-height: 5.4rem;
   background-color: var(--accent-pastel);
   color: var(--accent-text);
 }
 
 .jump-btn strong {
-  font-size: 1.05rem;
+  font-size: 1.25rem;
 }
 
 .jump-btn span {
@@ -403,22 +400,20 @@ button {
 }
 
 body[data-device="handheld"] .cam-btn {
-  min-width: 5.8rem;
-  min-height: 5.2rem;
+  min-width: 6.8rem;
+  min-height: 6rem;
 }
 
 body[data-device="handheld"] .jump-btn {
-  min-width: 8.2rem;
-  min-height: 5.2rem;
+  min-width: 9.8rem;
+  min-height: 6rem;
 }
 
-/* =========================================================
-   INITIATION, STUDIO & PAUSE MODALS (EQUIDISTANT LAYOUT)
-   ========================================================= */
+/* Glassmorphic Modals & Studio */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  padding: calc(var(--ui-gap) * 2 + 2.75rem) var(--ui-gap) var(--ui-gap);
+  padding: calc(var(--ui-gap) * 2 + 3.2rem) var(--ui-gap) var(--ui-gap);
   z-index: 40;
   display: grid;
   place-items: center;
@@ -433,19 +428,19 @@ body[data-device="handheld"] .jump-btn {
 }
 
 .modal-card {
-  width: min(92vw, 44rem);
-  max-height: calc(100vh - (var(--ui-gap) * 3 + 2.75rem));
+  width: min(94vw, 48rem);
+  max-height: calc(100vh - (var(--ui-gap) * 3 + 3.2rem));
   overflow-y: auto;
   padding: calc(var(--pad-card) * 1.35);
   touch-action: pan-y;
 }
 
 .wide-modal {
-  width: min(94vw, 58rem);
+  width: min(95vw, 64rem);
 }
 
 .compact-modal {
-  width: min(90vw, 28rem);
+  width: min(92vw, 31rem);
   text-align: center;
 }
 
@@ -458,7 +453,7 @@ body[data-device="handheld"] .jump-btn {
 .modal-heading-group {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.35rem;
 }
 
 .modal-top-row {
@@ -469,47 +464,46 @@ body[data-device="handheld"] .jump-btn {
 
 .step-badge {
   display: inline-block;
-  padding: 0.32rem 0.9rem;
+  padding: 0.38rem 1rem;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 800;
   background-color: var(--accent-secondary);
   color: var(--accent-text);
 }
 
 .detect-status {
-  font-size: 0.76rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: var(--text-muted);
 }
 
 .link-btn {
   background-color: var(--pill-bg);
-  border: 1px solid var(--surface-border);
+  border: 1.5px solid var(--surface-border);
   border-radius: 999px;
   color: var(--text-main);
   cursor: pointer;
   font-weight: 700;
-  font-size: 0.78rem;
-  padding: 0.38rem 0.9rem;
+  font-size: 0.84rem;
+  padding: 0.45rem 1rem;
 }
 
 .modal-title {
-  font-size: 1.55rem;
+  font-size: 1.7rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  margin-top: 0.25rem;
 }
 
 .modal-subtitle {
   color: var(--text-muted);
-  font-size: 0.86rem;
+  font-size: 0.92rem;
   font-weight: 600;
 }
 
 .device-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
   gap: var(--ui-gap);
 }
 
@@ -523,7 +517,7 @@ body[data-device="handheld"] .jump-btn {
 .device-card-inner {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .device-option.detected-choice {
@@ -542,13 +536,13 @@ body[data-device="handheld"] .jump-btn {
 }
 
 .device-emoji {
-  font-size: 1.85rem;
+  font-size: 2.1rem;
 }
 
 .detect-pill {
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  padding: 0.25rem 0.65rem;
+  padding: 0.3rem 0.75rem;
   border-radius: 999px;
   background-color: var(--accent-mint);
   color: var(--accent-text);
@@ -559,23 +553,21 @@ body[data-device="handheld"] .jump-btn {
 }
 
 .device-option h3 {
-  font-size: 1rem;
+  font-size: 1.08rem;
   font-weight: 800;
 }
 
 .device-option p {
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 600;
   color: var(--text-muted);
-  line-height: 1.4;
+  line-height: 1.42;
 }
 
-/* =========================================================
-   3-COLUMN EQUIDISTANT STUDIO & LIVE 3D BIRD PREVIEW
-   ========================================================= */
+/* Studio & Live Preview */
 .studio-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
   gap: var(--ui-gap);
 }
 
@@ -596,7 +588,7 @@ body[data-device="handheld"] .jump-btn {
 .field-block {
   display: flex;
   flex-direction: column;
-  gap: 0.42rem;
+  gap: 0.48rem;
 }
 
 .preview-header {
@@ -605,23 +597,36 @@ body[data-device="handheld"] .jump-btn {
   align-items: center;
 }
 
-.preview-tag {
+.auto-rot-btn {
+  background-color: var(--pill-bg);
+  border: 1.5px solid var(--surface-border);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
   font-size: 0.7rem;
   font-weight: 800;
-  padding: 0.22rem 0.65rem;
-  border-radius: 999px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.auto-rot-btn.active {
   background-color: var(--accent-mint);
   color: var(--accent-text);
+  border-color: transparent;
 }
 
 .preview-stage-wrap {
   width: 100%;
-  height: 11.5rem;
+  height: 13rem;
   border-radius: var(--inner-radius);
   background-color: var(--preview-bg);
-  border: 1.5px solid var(--surface-border);
+  border: 1.8px solid var(--surface-border);
   overflow: hidden;
   position: relative;
+  cursor: grab;
+}
+
+.preview-stage-wrap:active {
+  cursor: grabbing;
 }
 
 #bird-preview-canvas {
@@ -631,7 +636,7 @@ body[data-device="handheld"] .jump-btn {
 }
 
 .preview-caption {
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   font-weight: 700;
   text-align: center;
   color: var(--text-muted);
@@ -639,34 +644,47 @@ body[data-device="handheld"] .jump-btn {
 
 .group-label {
   display: block;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
 }
 
+.glass-select {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.85rem;
+  border: 1.8px solid var(--surface-border);
+  background-color: var(--pill-bg);
+  color: var(--text-main);
+  font-weight: 700;
+  font-size: 0.82rem;
+  outline: none;
+  cursor: pointer;
+}
+
 .sub-setting-wrap {
-  padding-top: 0.6rem;
+  padding-top: 0.65rem;
   border-top: 1px dashed var(--surface-border);
 }
 
 .seg-buttons {
   display: flex;
-  gap: 0.45rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
 .seg-btn {
   flex: 1;
-  min-width: 4.8rem;
-  padding: 0.55rem 0.6rem;
-  border-radius: 0.75rem;
-  border: 1.5px solid var(--surface-border);
+  min-width: 5.2rem;
+  padding: 0.65rem 0.7rem;
+  border-radius: 0.8rem;
+  border: 1.8px solid var(--surface-border);
   background-color: var(--pill-bg);
   color: var(--text-main);
   font-weight: 700;
-  font-size: 0.74rem;
+  font-size: 0.8rem;
   cursor: pointer;
 }
 
@@ -678,13 +696,13 @@ body[data-device="handheld"] .jump-btn {
 
 .swatch-row {
   display: flex;
-  gap: 0.65rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
 .swatch {
-  width: 2rem;
-  height: 2rem;
+  width: 2.2rem;
+  height: 2.2rem;
   border-radius: 50%;
   border: 2px solid var(--surface-border);
   cursor: pointer;
@@ -693,7 +711,7 @@ body[data-device="handheld"] .jump-btn {
 
 .swatch.active {
   transform: scale(1.18);
-  box-shadow: 0 0 0 2px var(--text-main);
+  box-shadow: 0 0 0 2.5px var(--text-main);
 }
 
 .launch-actions {
@@ -711,12 +729,12 @@ body[data-device="handheld"] .jump-btn {
 
 .primary-cta,
 .secondary-cta {
-  padding: 0.8rem 1.4rem;
+  padding: 0.9rem 1.6rem;
   border-radius: var(--inner-radius);
   font-weight: 800;
-  font-size: 0.88rem;
+  font-size: 0.94rem;
   cursor: pointer;
-  border: 1.5px solid var(--surface-border);
+  border: 1.8px solid var(--surface-border);
 }
 
 .primary-cta {
@@ -729,6 +747,11 @@ body[data-device="handheld"] .jump-btn {
   color: var(--text-main);
 }
 
+.revive-btn {
+  background-color: var(--accent-mint);
+  color: var(--accent-text);
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -737,30 +760,28 @@ body[data-device="handheld"] .jump-btn {
 
 .summary-box {
   background-color: var(--pill-bg);
-  padding: 0.75rem;
+  padding: 0.85rem;
   border-radius: var(--inner-radius);
-  border: 1.5px solid var(--surface-border);
+  border: 1.8px solid var(--surface-border);
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
   align-items: center;
   justify-content: center;
 }
 
 .summary-box span {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 700;
   color: var(--text-muted);
 }
 
 .summary-box strong {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   font-weight: 800;
 }
 
-/* =========================================================
-   3-SECOND COUNTDOWN OVERLAY
-   ========================================================= */
+/* Countdown Overlay */
 .countdown-backdrop {
   position: fixed;
   inset: 0;
@@ -777,24 +798,24 @@ body[data-device="handheld"] .jump-btn {
 }
 
 .countdown-orb {
-  padding: 1.8rem 3rem;
+  padding: 2rem 3.4rem;
   text-align: center;
 }
 
 .countdown-inner {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
 }
 
 #countdown-number {
-  font-size: 3.8rem;
+  font-size: 4.2rem;
   font-weight: 900;
   line-height: 1;
 }
 
 #countdown-sub {
-  font-size: 0.84rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--text-muted);
 }
